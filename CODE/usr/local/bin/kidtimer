@@ -4,10 +4,8 @@
 
 #variables
 #LANG="en_US.UTF-8" #unremark to change preferred language.
-#basedir="/usr/local/kidtimer"
-basedir="usr/local/kidtimer"
-#configdir="/etc/kidtimer"
-configdir="etc/kidtimer"
+basedir="/usr/local/kidtimer"
+configdir="/etc/kidtimer"
 Cdate=`/bin/date +%Y-%m-%d`
 TUI=0
 HOUR=`/bin/date +%H`
@@ -32,8 +30,8 @@ echo "kidtimer info"
 echo "---------------------------------------------"
 /bin/date
 echo "---"
-echo "find $basedir/ -print | sort"
-/usr/bin/find $basedir/ -print | /usr/bin/sort
+echo "find /usr/local/kidtimer/ -print | sort"
+/usr/bin/find /usr/local/kidtimer/ -print | /usr/bin/sort
 echo "---"
 echo "cat $configdir/kid.list"
 /bin/cat $configdir/kid.list
@@ -41,11 +39,11 @@ echo "---"
 echo "passwd -S -a"
 /usr/bin/passwd -S -a
 echo "---"
-echo "cat $basedir/schedule/*"
-/bin/cat $basedir/schedule/*
+echo "cat /usr/local/kidtimer/schedule/*"
+/bin/cat /usr/local/kidtimer/schedule/*
 echo "---"
-echo "cat $basedir/time/*"
-/bin/cat $basedir/time/*
+echo "cat /usr/local/kidtimer/time/*"
+/bin/cat /usr/local/kidtimer/time/*
 echo "---"
 echo "cat /etc/cron.d/kidtimer"
 /bin/cat /etc/cron.d/kidtimer
@@ -160,11 +158,11 @@ TMPFILE="/tmp/kidtimer.send$T.bash.$K"
 echo "#!/bin/bash" > $TMPFILE
 D=`/usr/bin/who | grep $K | grep -m1 "(:" | cut -d\( -f2 | sed s/\)// | sed s/://`
 if [ -e $basedir/locale/$LANG ]; then
-	MSG=`/bin/sed -n "$LINE"p $basedir/locale/$LANG`
+	MSG=`/bin/sed -n "$LINE"p /usr/local/kidtimer/locale/$LANG`
 else
 	MSG="Your computer time will end in $TEXT minutes."
 fi
-echo "/bin/su $K -c 'DISPLAY=:$D /usr/bin/notify-send -i $basedir/icons/kidtimer-$TEXT.png \
+echo "/bin/su $K -c 'DISPLAY=:$D /usr/bin/notify-send -i /usr/local/kidtimer/icons/kidtimer-$TEXT.png \
 	\"ALERT\" \"$MSG\"'" >> $TMPFILE
 echo "/bin/rm -f $TMPFILE" >> $TMPFILE
 echo "/bin/bash $TMPFILE" | /usr/bin/at now + $T minutes
@@ -183,12 +181,12 @@ echo "/bin/bash /tmp/killall.bash.$K" | /usr/bin/at now + 6 minutes
 
 
 go_echo_error () {
-echo "`/bin/sed -n '12p' $basedir/locale/$LANG`"
+echo "`/bin/sed -n '12p' /usr/local/kidtimer/locale/$LANG`"
 }
 
 
 go_echo_done () {
-echo "`/bin/sed -n '13p' $basedir/locale/$LANG`"
+echo "`/bin/sed -n '13p' /usr/local/kidtimer/locale/$LANG`"
 }
 
 
@@ -212,7 +210,7 @@ if [ $? -eq 0 ]; then
 	elif [ "$A" == "" ]; then
 	        go_echo_error
 		#english: Syntax: addtime <user> <minutes|reset>
-	        echo "`/bin/sed -n '22p' $basedir/locale/$LANG`"
+	        echo "`/bin/sed -n '22p' /usr/local/kidtimer/locale/$LANG`"
 	        exit 1
 	else        
 	        C=`/bin/cat $basedir/time/$KID.ttl`
@@ -225,7 +223,7 @@ if [ $? -eq 0 ]; then
 else
 	go_echo_error
 	#english: User not setup.
-	echo "`/bin/sed -n '19p' $basedir/locale/$LANG`"
+	echo "`/bin/sed -n '19p' /usr/local/kidtimer/locale/$LANG`"
 	exit 1
 fi
 }
@@ -237,7 +235,7 @@ if [ -e $basedir/time/$KID.ttl ]; then
 else
 	echo
 	#english: User not setup.
-	echo "`/bin/sed -n '19p' $basedir/locale/$LANG`"
+	echo "`/bin/sed -n '19p' /usr/local/kidtimer/locale/$LANG`"
 	echo
 fi
 }
@@ -264,11 +262,11 @@ go_tui
 
 go_command_list () {
 echo
-echo "1) "`/bin/sed -n '7p' $basedir/locale/$LANG`
-echo "2) "`/bin/sed -n '8p' $basedir/locale/$LANG`
-echo "3) "`/bin/sed -n '9p' $basedir/locale/$LANG`
-echo "4) "`/bin/sed -n '10p' $basedir/locale/$LANG`
-echo "5) "`/bin/sed -n '11p' $basedir/locale/$LANG`
+echo "1) "`/bin/sed -n '7p' /usr/local/kidtimer/locale/$LANG`
+echo "2) "`/bin/sed -n '8p' /usr/local/kidtimer/locale/$LANG`
+echo "3) "`/bin/sed -n '9p' /usr/local/kidtimer/locale/$LANG`
+echo "4) "`/bin/sed -n '10p' /usr/local/kidtimer/locale/$LANG`
+echo "5) "`/bin/sed -n '11p' /usr/local/kidtimer/locale/$LANG`
 echo
 }
 
@@ -276,12 +274,12 @@ echo
 go_list_users () {
 echo
 #english: Users configured for kidtimer:
-echo "`/bin/sed -n '14p' $basedir/locale/$LANG`"
+echo "`/bin/sed -n '14p' /usr/local/kidtimer/locale/$LANG`"
 if [ -s $configdir/kid.list ]; then
         /bin/cat $configdir/kid.list
 else
 	#english: No configured users.
-        echo "`/bin/sed -n '15p' $basedir/locale/$LANG`"
+        echo "`/bin/sed -n '15p' /usr/local/kidtimer/locale/$LANG`"
 	echo
 fi
 }
@@ -289,7 +287,7 @@ fi
 go_setup_user () {
 echo
 #english: Username:
-echo -n "`/bin/sed -n '16p' $basedir/locale/$LANG` "; read U
+echo -n "`/bin/sed -n '16p' /usr/local/kidtimer/locale/$LANG` "; read U
 /usr/bin/id $U > /dev/null 2>&1
 if [ $? -eq 0 ]; then
         /bin/cp $basedir/schedule/blank $basedir/schedule/$U
@@ -298,7 +296,7 @@ if [ $? -eq 0 ]; then
         go_echo_done
         echo
 	#english: Modify limits now ?(y/n):
-        echo -n "`/bin/sed -n '17p' $basedir/locale/$LANG`"; read M
+        echo -n "`/bin/sed -n '17p' /usr/local/kidtimer/locale/$LANG`"; read M
         if [ "$M" == "y" ]; then
                 if [ -e /usr/bin/nano ]; then
                 	/usr/bin/nano $basedir/schedule/$U
@@ -313,7 +311,7 @@ if [ $? -eq 0 ]; then
 else
 	go_echo_error
 	#english: User does not exist. Please create user using the useradd command first.
-        echo "`/bin/sed -n '18p' $basedir/locale/$LANG`"
+        echo "`/bin/sed -n '18p' /usr/local/kidtimer/locale/$LANG`"
 fi
 }
 
@@ -321,7 +319,7 @@ fi
 go_modify_user () {
 echo
 #english: Username:
-echo -n "`/bin/sed -n '16p' $basedir/locale/$LANG` "; read U
+echo -n "`/bin/sed -n '16p' /usr/local/kidtimer/locale/$LANG` "; read U
 grep -q ^$U $configdir/kid.list
 if [ $? -eq 0 ]; then
         if [ -e /usr/bin/nano ]; then
@@ -334,7 +332,7 @@ if [ $? -eq 0 ]; then
 else
 	go_echo_error
 	#english: User not setup.
-        echo "`/bin/sed -n '19p' $basedir/locale/$LANG`"
+        echo "`/bin/sed -n '19p' /usr/local/kidtimer/locale/$LANG`"
 	echo
 fi
 }
@@ -343,7 +341,7 @@ fi
 go_remove_user () {
 echo
 #english: Username:
-echo -n "`/bin/sed -n '16p' $basedir/locale/$LANG` "; read U
+echo -n "`/bin/sed -n '16p' /usr/local/kidtimer/locale/$LANG` "; read U
 grep -q ^$U $configdir/kid.list
 if [ $? -eq 0 ]; then
         /bin/grep -v ^$U $configdir/kid.list > /tmp/kidtimer.tmp
@@ -352,7 +350,7 @@ if [ $? -eq 0 ]; then
 else
 	go_echo_error
 	#english: User not setup.
-        echo "`/bin/sed -n '19p' $basedir/locale/$LANG`"
+        echo "`/bin/sed -n '19p' /usr/local/kidtimer/locale/$LANG`"
 	echo
 fi
 }
@@ -397,9 +395,9 @@ fi
 if [ "$pstatus" == "1" ]; then
 	echo
 	#english: Error. Missing package dependencies.
-	echo "`/bin/sed -n '20p' $basedir/locale/$LANG`"
+	echo "`/bin/sed -n '20p' /usr/local/kidtimer/locale/$LANG`"
 	#english: Please install using the following line;
-	echo "`/bin/sed -n '21p' $basedir/locale/$LANG`"
+	echo "`/bin/sed -n '21p' /usr/local/kidtimer/locale/$LANG`"
 	echo "sudo apt-get install "$P1" "$P2" "$P3
 	exit 1
 fi
