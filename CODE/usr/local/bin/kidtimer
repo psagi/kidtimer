@@ -4,8 +4,11 @@
 
 #variables
 #LANG="en_US.UTF-8" #unremark to change preferred language.
-basedir="/usr/local/kidtimer"
-configdir="/etc/kidtimer"
+basedir="/usr/local/share/kidtimer"
+dbdir="/var/local/kidtimer"
+scheduledir="$dbdir/schedule"
+timedir="$dbdir/time"
+configdir="$dbdir"
 Cdate=`/bin/date +%Y-%m-%d`
 TUI=0
 HOUR=`/bin/date +%H`
@@ -39,11 +42,11 @@ echo "---"
 echo "passwd -S -a"
 /usr/bin/passwd -S -a
 echo "---"
-echo "cat $basedir/schedule/*"
-/bin/cat $basedir/schedule/*
+echo "cat $scheduledir/*"
+/bin/cat $scheduledir/*
 echo "---"
-echo "cat $basedir/time/*"
-/bin/cat $basedir/time/*
+echo "cat $timedir/*"
+/bin/cat $timedir/*
 echo "---"
 echo "cat /etc/cron.d/kidtimer"
 /bin/cat /etc/cron.d/kidtimer
@@ -51,8 +54,8 @@ echo "---"
 echo "apt-cache showpkg kidtimer"
 /usr/bin/apt-cache showpkg kidtimer
 echo "---"
-echo "cat /etc/lsb-release"
-/bin/cat /etc/lsb-release
+echo "cat /etc/os-release"
+/bin/cat /etc/os-release
 echo "---"
 echo "uname -a"
 /bin/uname -a
@@ -67,13 +70,13 @@ go_check () {
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
         /usr/bin/users | /bin/grep -q $I
         if [ $? -eq 0 ]; then
-                if [ -e $basedir/time/$I.ttl ]; then
-                        C=`/bin/cat $basedir/time/$I.ttl`
+                if [ -e $timedir/$I.ttl ]; then
+                        C=`/bin/cat $timedir/$I.ttl`
                         C=$((C - 1))
-                        echo $C > $basedir/time/$I.ttl
+                        echo $C > $timedir/$I.ttl
                 else
-			get_ttl_time $I > $basedir/time/$I.ttl
-                        C=`/bin/cat $basedir/time/$I.ttl`
+			get_ttl_time $I > $timedir/$I.ttl
+                        C=`/bin/cat $timedir/$I.ttl`
                 fi
 		# check time
 		if [ $C -le 5 ]; then
@@ -90,8 +93,8 @@ done
 
 
 get_ttl_time () {
-        [ "$WEEKEND" == "no" ] && /bin/cat $basedir/schedule/$1 | /bin/grep ^MAX | /usr/bin/awk '{ print $2 }'
-        [ "$WEEKEND" == "yes" ] && /bin/cat $basedir/schedule/$1 | /bin/grep ^MAX | /usr/bin/awk '{ print $3 }'
+        [ "$WEEKEND" == "no" ] && /bin/cat $scheduledir/$1 | /bin/grep ^MAX | /usr/bin/awk '{ print $2 }'
+        [ "$WEEKEND" == "yes" ] && /bin/cat $scheduledir/$1 | /bin/grep ^MAX | /usr/bin/awk '{ print $3 }'
 }
 
 
@@ -107,9 +110,9 @@ done
 
 go_daily () {
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
-        /usr/bin/stat -c %y $basedir/time/$I.ttl | /bin/grep -q $Cdate
+        /usr/bin/stat -c %y $timedir/$I.ttl | /bin/grep -q $Cdate
         if [ ! $? -eq 0 ]; then
-		get_ttl_time $I > $basedir/time/$I.ttl
+		get_ttl_time $I > $timedir/$I.ttl
         fi
 done
 go_hourly
@@ -119,16 +122,16 @@ go_hourly
 go_hourly () {
 if [ -s $configdir/kid.list ]; then
         for I in `/bin/cat $configdir/kid.list | sort -u`; do
-                if [ -e $basedir/schedule/$I ]; then
-                        [ -e $basedir/time/$I.ttl ] && C=`/bin/cat $basedir/time/$I.ttl`
+                if [ -e $scheduledir/$I ]; then
+                        [ -e $timedir/$I.ttl ] && C=`/bin/cat $timedir/$I.ttl`
                         [ $C -le 0 ] && /usr/bin/passwd $I -l && exit 0
-                        [ "$WEEKEND" == "no" ] && R=`/bin/grep ^$HOUR $basedir/schedule/$I | /usr/bin/awk '{ print $2 }'`
-                        [ "$WEEKEND" == "yes" ] && R=`/bin/grep ^$HOUR $basedir/schedule/$I | /usr/bin/awk '{ print $3 }'`
+                        [ "$WEEKEND" == "no" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $2 }'`
+                        [ "$WEEKEND" == "yes" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $3 }'`
                         if [ "$R" == "y" ]; then
                                 /usr/bin/passwd $I -u
                         else
                                 /usr/bin/passwd $I -l
-                                /usr/bin/users | /bin/grep -q $I && /usr/local/bin/kidtimer shutdown $I
+                                /usr/bin/users | /bin/grep -q $I && go_logout $I
                         fi
                 fi
         done
@@ -191,7 +194,7 @@ echo "`/bin/sed -n '13p' $basedir/locale/$LANG`"
 
 
 go_reset_time () {
-get_ttl_time $KID > $basedir/time/$KID.ttl
+get_ttl_time $KID > $timedir/$KID.ttl
 /usr/bin/passwd $KID -u
 go_clean_jobs $KID
 go_echo_done
@@ -204,7 +207,7 @@ A=$Time
 grep -q $U $configdir/kid.list
 if [ $? -eq 0 ]; then 
 	if [ "$A" == "reset" ]; then
-		get_ttl_time $U > $basedir/time/$U.ttl
+		get_ttl_time $U > $timedir/$U.ttl
         	go_echo_done
         	exit 0
 	elif [ "$A" == "" ]; then
@@ -213,9 +216,9 @@ if [ $? -eq 0 ]; then
 	        echo "`/bin/sed -n '22p' $basedir/locale/$LANG`"
 	        exit 1
 	else        
-	        C=`/bin/cat $basedir/time/$KID.ttl`
+	        C=`/bin/cat $timedir/$KID.ttl`
 	        C=$((C + Time))
-	        echo $C > $basedir/time/$KID.ttl
+	        echo $C > $timedir/$KID.ttl
 		get_time
 	fi
 	/usr/bin/passwd $KID -u
@@ -230,8 +233,8 @@ fi
 
 
 get_time () {
-if [ -e $basedir/time/$KID.ttl ]; then
-	cat $basedir/time/$KID.ttl
+if [ -e $timedir/$KID.ttl ]; then
+	cat $timedir/$KID.ttl
 else
 	echo
 	#english: User not setup.
@@ -290,8 +293,8 @@ echo
 echo -n "`/bin/sed -n '16p' $basedir/locale/$LANG` "; read U
 /usr/bin/id $U > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-        /bin/cp $basedir/schedule/blank $basedir/schedule/$U
-	get_ttl_time $U > $basedir/time/$U.ttl
+        /bin/cp $scheduledir/blank $scheduledir/$U
+	get_ttl_time $U > $timedir/$U.ttl
         echo $U >> $configdir/kid.list
         go_echo_done
         echo
@@ -299,12 +302,12 @@ if [ $? -eq 0 ]; then
         echo -n "`/bin/sed -n '17p' $basedir/locale/$LANG`"; read M
         if [ "$M" == "y" ]; then
                 if [ -e /usr/bin/nano ]; then
-                	/usr/bin/nano $basedir/schedule/$U
-			get_ttl_time $U > $basedir/time/$U.ttl
+                	/usr/bin/nano $scheduledir/$U
+			get_ttl_time $U > $timedir/$U.ttl
                  	go_echo_done
          	else
-                	/usr/bin/vi $basedir/schedule/$U
-			get_ttl_time $U > $basedir/time/$U.ttl
+                	/usr/bin/vi $scheduledir/$U
+			get_ttl_time $U > $timedir/$U.ttl
                 	go_echo_done
                 fi
         fi
@@ -323,10 +326,10 @@ echo -n "`/bin/sed -n '16p' $basedir/locale/$LANG` "; read U
 grep -q ^$U $configdir/kid.list
 if [ $? -eq 0 ]; then
         if [ -e /usr/bin/nano ]; then
-                /usr/bin/nano $basedir/schedule/$U
+                /usr/bin/nano $scheduledir/$U
                 go_echo_done
         else
-                /usr/bin/vi $basedir/schedule/$U
+                /usr/bin/vi $scheduledir/$U
                 go_echo_done
         fi
 else
@@ -366,7 +369,7 @@ echo "reset <user> ... Reset time for the day."
 echo "logout <user> ... Starts logout sequence for user."
 echo "hourly ... Enables/disables user access based on the schedule."
 echo "daily ... Resets time for the new day."
-echo "update ... Updates kidtimer to the latest version."
+#echo "update ... Updates kidtimer to the latest version."
 echo "info ... Gather local configurations to troubleshoot issues."
 echo "help ... This list."
 echo "--------------------------------------------------------------------------------"
@@ -403,18 +406,18 @@ if [ "$pstatus" == "1" ]; then
 fi
 }
 
-get_update () {
-URL='https://github.com/grover66/kidtimer/raw/master/DEBS/kidtimer_latest.deb'
-if [ -e /usr/bin/wget ]; then
-	/usr/bin/wget "$URL" -qO /tmp/kidtimer_latest.deb
-	/usr/bin/dpkg -i /tmp/kidtimer_latest.deb
-	/bin/rm -f /tmp/kidtimer_latest.deb
-else
-	echo
-	echo "Error. Requires wget"
-	echo "To install wget; sudo apt-get install wget"
-fi
-}
+#get_update () {
+#URL='https://github.com/grover66/kidtimer/raw/master/DEBS/kidtimer_latest.deb'
+#if [ -e /usr/bin/wget ]; then
+#/usr/bin/wget "$URL" -qO /tmp/kidtimer_latest.deb
+#/usr/bin/dpkg -i /tmp/kidtimer_latest.deb
+#/bin/rm -f /tmp/kidtimer_latest.deb
+#else
+#echo
+#echo "Error. Requires wget"
+#echo "To install wget; sudo apt-get install wget"
+#fi
+#}
 
 
 ###################### Code ####################
@@ -438,8 +441,8 @@ hourly) go_hourly
         ;;
 daily) go_daily
         ;;
-update) get_update
-        ;;
+#update) get_update
+#;;
 check) go_check
         ;;
 info) get_info
