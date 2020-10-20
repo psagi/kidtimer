@@ -1,7 +1,6 @@
-### NOTE:
-Since my kids have grown up... I have not been keeping this software updated. Please goto https://github.com/JimDunphy/kidtimer for the latest code and new features. Great work Jim!!!
+Now the DB files are moved to /var/local/kidtimer and are directly editable. This directory can also be mounted from a fileserver for shared use.
 
-
+### NOTE from the original author:
 I have been looking for a solution to this for a long time. I have two kids and wish to restrict their time on the computers. Since nothing else seems to work out there, I decided to write my own. I call it kidtimer. Very original, I know. :)
 
 Kidtimer should work on any recent version of Ubuntu, both 32 & 64 bit. Should also work on Debian too. It uses standard Linux utilities and notify-send (for user notification).
@@ -13,7 +12,7 @@ Kidtimer should work on any recent version of Ubuntu, both 32 & 64 bit. Should a
 So this is how to install it and use it;
 
 1. Download the latest kidtimer deb file;
-https://github.com/grover66/kidtimer/raw/master/DEBS/kidtimer_latest.deb
+https://github.com/psagi/kidtimer/raw/master/DEBS/kidtimer_latest.deb
 
 2. Install it using Software Center or use the following lines;
 <pre>
@@ -45,34 +44,12 @@ To check user's time:
 sudo kidtimer gettime user
 </pre>
 
-To update kidtimer to the latest version:
-<pre>
-sudo kidtimer update
-</pre>
-
 
 Features:
 
 Allow your kid specific hours of the day to access the computer, both weekday and weekend.
 
 Set maximum amount of time, both weekday and weekend.
-
-Key files:
-<pre>
-/etc/kidtimer/kid.list
-/etc/cron.d/kidtimer
-/usr/local/kidtimer/locale/de_DE.UTF-8 #German
-/usr/local/kidtimer/locale/en_US.UTF-8 #English
-/usr/local/kidtimer/locale/es_ES.UTF-8 #Spanish
-/usr/local/kidtimer/locale/fr_FR.UTF-8 #French
-/usr/local/kidtimer/locale/fr_BE.UTF-8 #French
-/usr/local/kidtimer/locale/fr_CA.UTF-8 #French
-/usr/local/kidtimer/locale/fr_CH.UTF-8 #French
-/usr/local/kidtimer/locale/it_IT.UTF-8 #Italian
-/usr/local/kidtimer/schedule/<user>
-/usr/local/kidtimer/time/<user>.ttl
-/usr/local/bin/kidtimer
-</pre>
 
 Cronjobs:
 

@@ -4,7 +4,7 @@
 
 #variables
 #LANG="en_US.UTF-8" #unremark to change preferred language.
-basedir="/usr/local/share/kidtimer"
+basedir="/usr/share/kidtimer"
 dbdir="/var/local/kidtimer"
 scheduledir="$dbdir/schedule"
 timedir="$dbdir/time"
