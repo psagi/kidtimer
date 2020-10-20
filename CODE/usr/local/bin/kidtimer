@@ -66,10 +66,37 @@ echo
 }
 
 
+has_ttl_been_touched_in_the_last_minute () {
+	local p_username="$1"
+
+	local v_ttl_filename="$timedir/$p_username.ttl"
+	[ -e "$v_ttl_filename" ] &&					\
+		[							\
+			$((						\
+				$(date +%s) -				\
+				$(stat -c "%Y" "$v_ttl_filename")	\
+			)) -lt 60					\
+		]
+}
+
+
+clean_up_logout_sequence () {
+	local p_username="$1"
+
+	/usr/bin/passwd "$p_username" -u
+	go_clean_jobs "$p_username"
+}
+
 go_check () {
+local I
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
         /usr/bin/users | /bin/grep -q $I
         if [ $? -eq 0 ]; then
+		if has_ttl_been_touched_in_the_last_minute "$I"; then
+#echo "go_check(): \$I = $I" 1>&2
+			clean_up_logout_sequence "$I"
+		fi
+#echo "go_check(): \$I = $I" 1>&2
                 if [ -e $timedir/$I.ttl ]; then
                         C=`/bin/cat $timedir/$I.ttl`
                         C=$((C - 1))
@@ -99,7 +126,7 @@ get_ttl_time () {
 
 
 go_clean_jobs () {
-K=$1
+local K=$1 I
 for I in `/usr/bin/atq | /usr/bin/awk '{ print $1 }' | /usr/bin/sort`; do
         /usr/bin/at -c $I | /bin/grep -q "bash.$K"
         [ $? -eq 0 ] && /usr/bin/at -d $I
@@ -195,8 +222,6 @@ echo "`/bin/sed -n '13p' $basedir/locale/$LANG`"
 
 go_reset_time () {
 get_ttl_time $KID > $timedir/$KID.ttl
-/usr/bin/passwd $KID -u
-go_clean_jobs $KID
 go_echo_done
 }
 
@@ -221,8 +246,6 @@ if [ $? -eq 0 ]; then
 	        echo $C > $timedir/$KID.ttl
 		get_time
 	fi
-	/usr/bin/passwd $KID -u
-	go_clean_jobs $KID
 else
 	go_echo_error
 	#english: User not setup.

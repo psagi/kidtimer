@@ -3,7 +3,7 @@ Version: 2.3-1
 Section: utils
 Priority: optional
 Architecture: all
-Depends: at, libnotify-bin, bsdutils
+Depends: at, libnotify-bin, bash, coreutils
 Installed-Size: 8
 Maintainer: Michael Groves <grover66@gmail.com>
 Homepage: http://github.com/grover66/kidtimer
