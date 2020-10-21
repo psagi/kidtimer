@@ -1,4 +1,0 @@
-0 * * * *                root        /usr/bin/kidtimer hourly
-0 0 * * *                root        /usr/bin/kidtimer daily
-* * * * *                root        /usr/bin/kidtimer check
-@reboot                root        /usr/bin/kidtimer daily

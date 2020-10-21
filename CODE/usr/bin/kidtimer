@@ -178,6 +178,20 @@ go_killall $K
 }
 
 
+setup_job () {
+	local p_delay="$1"
+
+	# The whole magic is for cleaning up the stdout and stderr streams from
+	# misdirected output
+	local v_warning_line="warning: commands will be executed using /bin/sh"
+	local v_job_line="^job [0-9]\+ at "
+	/usr/bin/at now + "$p_delay" minutes 2> >(	\
+		tee >(grep -v -e "$v_warning_line" -e "$v_job_line" >&2) | \
+			grep "$v_job_line"		\
+	)
+}
+
+
 go_send () {
 K=$1
 T=$2
@@ -195,7 +209,7 @@ fi
 echo "/bin/su $K -c 'DISPLAY=:$D /usr/bin/notify-send -i $basedir/icons/kidtimer-$TEXT.png \
 	\"ALERT\" \"$MSG\"'" >> $TMPFILE
 echo "/bin/rm -f $TMPFILE" >> $TMPFILE
-echo "/bin/bash $TMPFILE" | /usr/bin/at now + $T minutes
+echo "/bin/bash $TMPFILE" | setup_job "$T"
 }
 
 
@@ -206,7 +220,7 @@ echo "#!/bin/bash" > /tmp/killall.bash.$K
 echo "/usr/bin/pkill -KILL -u $K" >> /tmp/killall.bash.$K
 echo "/bin/rm -rf /tmp/kidtimer.shutdown.$K" >> /tmp/killall.bash.$K
 echo "/bin/rm -f /tmp/killall.bash.$K" >> /tmp/killall.bash.$K
-echo "/bin/bash /tmp/killall.bash.$K" | /usr/bin/at now + 6 minutes
+echo "/bin/bash /tmp/killall.bash.$K" | setup_job 6
 }
 
 
