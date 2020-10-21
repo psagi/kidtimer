@@ -412,36 +412,36 @@ echo "help ... This list."
 echo "--------------------------------------------------------------------------------"
 }
 
-check_dependencies () {
-#at
-P1="";P2="";P3="";pstatus="0"
-/usr/bin/dpkg -s at >/dev/null 2>/dev/null
-if [ ! $? -eq 0 ]; then
-	P1="at"
-	pstatus=1
-fi
-#libnotify-bin
-/usr/bin/dpkg -s libnotify-bin >/dev/null 2>/dev/null
-if [ ! $? -eq 0 ]; then
-        P2="libnotify-bin"
-        pstatus=1
-fi
-#bsdutils
-/usr/bin/dpkg -s bsdutils >/dev/null 2>/dev/null
-if [ ! $? -eq 0 ]; then
-        P3="bsdutils"
-        pstatus=1
-fi
-if [ "$pstatus" == "1" ]; then
-	echo
-	#english: Error. Missing package dependencies.
-	echo "`/bin/sed -n '20p' $basedir/locale/$LANG`"
-	#english: Please install using the following line;
-	echo "`/bin/sed -n '21p' $basedir/locale/$LANG`"
-	echo "sudo apt-get install "$P1" "$P2" "$P3
-	exit 1
-fi
-}
+#check_dependencies () {
+##at
+#P1="";P2="";P3="";pstatus="0"
+#/usr/bin/dpkg -s at >/dev/null 2>/dev/null
+#if [ ! $? -eq 0 ]; then
+#	P1="at"
+#	pstatus=1
+#fi
+##libnotify-bin
+#/usr/bin/dpkg -s libnotify-bin >/dev/null 2>/dev/null
+#if [ ! $? -eq 0 ]; then
+#        P2="libnotify-bin"
+#        pstatus=1
+#fi
+##bsdutils
+#/usr/bin/dpkg -s bsdutils >/dev/null 2>/dev/null
+#if [ ! $? -eq 0 ]; then
+#        P3="bsdutils"
+#        pstatus=1
+#fi
+#if [ "$pstatus" == "1" ]; then
+#	echo
+#	#english: Error. Missing package dependencies.
+#	echo "`/bin/sed -n '20p' $basedir/locale/$LANG`"
+#	#english: Please install using the following line;
+#	echo "`/bin/sed -n '21p' $basedir/locale/$LANG`"
+#	echo "sudo apt-get install "$P1" "$P2" "$P3
+#	exit 1
+#fi
+#}
 
 #get_update () {
 #URL='https://github.com/grover66/kidtimer/raw/master/DEBS/kidtimer_latest.deb'
@@ -461,7 +461,6 @@ fi
 ################################################
 
 if [ $TUI -eq 1 ]; then
-	check_dependencies
 	go_tui
 fi
 
