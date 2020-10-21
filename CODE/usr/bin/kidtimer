@@ -474,5 +474,9 @@ info) get_info
         ;;
 help) go_help
         ;;
+*)
+	go_echo_error
+	go_help
+        ;;
 esac
 exit 0
