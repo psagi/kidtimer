@@ -75,7 +75,7 @@ has_ttl_been_touched_in_the_last_minute () {
 			$((						\
 				$(date +%s) -				\
 				$(stat -c "%Y" "$v_ttl_filename")	\
-			)) -lt 60					\
+			)) -lt 59					\
 		]
 }
 
