@@ -69,12 +69,11 @@ echo
 has_ttl_been_touched_in_the_last_minute () {
 	local p_username="$1"
 
-	local v_ttl_filename="$timedir/$p_username.ttl"
-	[ -e "$v_ttl_filename" ] &&					\
+	[ -e $(ttl_filename "$p_username") ] &&					\
 		[							\
 			$((						\
 				$(date +%s) -				\
-				$(stat -c "%Y" "$v_ttl_filename")	\
+				$(stat -c "%Y" $(ttl_filename "$p_username") )	\
 			)) -lt 59					\
 		]
 }
@@ -87,6 +86,31 @@ clean_up_logout_sequence () {
 	go_clean_jobs "$p_username"
 }
 
+
+ttl_filename () {
+	local p_username="$1"
+
+	echo "$timedir/$p_username.ttl"
+}
+
+get_ttl () {
+	local p_username="$1"
+
+	[ -e $(ttl_filename "$p_username") ] &&	\
+		sed -n 1p $(ttl_filename "$p_username")
+}
+
+
+set_ttl () {
+	local p_username="$1" p_ttl="$2"
+
+	if [ -e $(ttl_filename "$p_username") ]; then
+		sed -i "1c$p_ttl" $(ttl_filename "$p_username")
+	else echo "$p_ttl" > $(ttl_filename "$p_username")
+	fi
+}
+
+
 go_check () {
 local I
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
@@ -97,14 +121,13 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
 			clean_up_logout_sequence "$I"
 		fi
 #echo "go_check(): \$I = $I" 1>&2
-                if [ -e $timedir/$I.ttl ]; then
-                        C=`/bin/cat $timedir/$I.ttl`
+		C=$(get_ttl "$I")
+                if [ -n "$C" ]; then
                         C=$((C - 1))
-                        echo $C > $timedir/$I.ttl
                 else
-			get_ttl_time $I > $timedir/$I.ttl
-                        C=`/bin/cat $timedir/$I.ttl`
+			C=$(get_ttl_time "$I")
                 fi
+		set_ttl "$I" "$C"
 		# check time
 		if [ $C -le 5 ]; then
         	        if [ ! -e /tmp/kidtimer.shutdown.$I ]; then
@@ -135,11 +158,17 @@ done
 }
 
 
+reset_ttl () {
+	local p_username="$1"
+	set_ttl "$p_username" $(get_ttl_time "$p_username")
+}
+
+
 go_daily () {
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
-        /usr/bin/stat -c %y $timedir/$I.ttl | /bin/grep -q $Cdate
+        /usr/bin/stat -c %y $(ttl_filename "$I") | /bin/grep -q $Cdate
         if [ ! $? -eq 0 ]; then
-		get_ttl_time $I > $timedir/$I.ttl
+		reset_ttl "$I"
         fi
 done
 go_hourly
@@ -150,8 +179,7 @@ go_hourly () {
 if [ -s $configdir/kid.list ]; then
         for I in `/bin/cat $configdir/kid.list | sort -u`; do
                 if [ -e $scheduledir/$I ]; then
-                        [ -e $timedir/$I.ttl ] && C=`/bin/cat $timedir/$I.ttl`
-                        [ $C -le 0 ] && /usr/bin/passwd $I -l && exit 0
+                        [ $(get_ttl "$I") -le 0 ] && /usr/bin/passwd $I -l && exit 0
                         [ "$WEEKEND" == "no" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $2 }'`
                         [ "$WEEKEND" == "yes" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $3 }'`
                         if [ "$R" == "y" ]; then
@@ -235,8 +263,10 @@ echo "`/bin/sed -n '13p' $basedir/locale/$LANG`"
 
 
 go_reset_time () {
-get_ttl_time $KID > $timedir/$KID.ttl
-go_echo_done
+	local p_username="$1"
+
+	reset_ttl "$p_username"
+	go_echo_done
 }
 
 
@@ -246,8 +276,7 @@ A=$Time
 grep -q $U $configdir/kid.list
 if [ $? -eq 0 ]; then 
 	if [ "$A" == "reset" ]; then
-		get_ttl_time $U > $timedir/$U.ttl
-        	go_echo_done
+		go_reset_time "$U"
         	exit 0
 	elif [ "$A" == "" ]; then
 	        go_echo_error
@@ -255,9 +284,7 @@ if [ $? -eq 0 ]; then
 	        echo "`/bin/sed -n '22p' $basedir/locale/$LANG`"
 	        exit 1
 	else        
-	        C=`/bin/cat $timedir/$KID.ttl`
-	        C=$((C + Time))
-	        echo $C > $timedir/$KID.ttl
+		set_ttl "$U" $(( $(get_ttl "$U") + A ))
 		get_time
 	fi
 else
@@ -270,8 +297,9 @@ fi
 
 
 get_time () {
-if [ -e $timedir/$KID.ttl ]; then
-	cat $timedir/$KID.ttl
+local v_ttl=$(get_ttl "$KID")
+if [ -n "$v_ttl" ]; then
+	echo "$v_ttl"
 else
 	echo
 	#english: User not setup.
@@ -331,22 +359,18 @@ echo -n "`/bin/sed -n '16p' $basedir/locale/$LANG` "; read U
 /usr/bin/id $U > /dev/null 2>&1
 if [ $? -eq 0 ]; then
         /bin/cp $scheduledir/blank $scheduledir/$U
-	get_ttl_time $U > $timedir/$U.ttl
         echo $U >> $configdir/kid.list
-        go_echo_done
+	go_reset_time "$U"
         echo
 	#english: Modify limits now ?(y/n):
         echo -n "`/bin/sed -n '17p' $basedir/locale/$LANG`"; read M
         if [ "$M" == "y" ]; then
                 if [ -e /usr/bin/nano ]; then
                 	/usr/bin/nano $scheduledir/$U
-			get_ttl_time $U > $timedir/$U.ttl
-                 	go_echo_done
          	else
                 	/usr/bin/vi $scheduledir/$U
-			get_ttl_time $U > $timedir/$U.ttl
-                	go_echo_done
                 fi
+		go_reset_time "$U"
         fi
 else
 	go_echo_error
@@ -467,7 +491,7 @@ fi
 case "$COMMAND" in
 addtime) go_addtime
         ;;
-reset) go_reset_time
+reset) go_reset_time "$KID"
         ;;
 gettime) get_time
         ;;
