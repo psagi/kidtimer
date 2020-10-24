@@ -93,26 +93,118 @@ ttl_filename () {
 	echo "$timedir/$p_username.ttl"
 }
 
+
+get_time_data () {
+	local p_username="$1" p_field="$2"
+
+	local v_rownum
+	case "$p_field" in
+		ttl) v_rownum=1 ;;
+		reward) v_rownum=2 ;;
+	esac
+	[ -e $(ttl_filename "$p_username") ] &&	\
+		sed -n $(rownum "$p_field")p $(ttl_filename "$p_username")
+}
+
+
 get_ttl () {
 	local p_username="$1"
 
-	[ -e $(ttl_filename "$p_username") ] &&	\
-		sed -n 1p $(ttl_filename "$p_username")
+	get_time_data "$p_username" ttl
 }
 
+
+rownum () {
+	local p_fieldname="$1"
+
+	case "$p_field" in
+		ttl) echo 1 ;;
+		reward) echo 2 ;;
+	esac
+}
+
+
+set_time_data () {
+	local p_username="$1" p_time="$2" p_field="$3"
+
+	if [ ! -e $(ttl_filename "$p_username") ]; then
+		echo > $(ttl_filename "$p_username")
+		echo >> $(ttl_filename "$p_username")
+	fi
+	sed -i $(rownum "$p_field")"c$p_time" $(ttl_filename "$p_username")
+}
 
 set_ttl () {
 	local p_username="$1" p_ttl="$2"
 
-	if [ -e $(ttl_filename "$p_username") ]; then
-		sed -i "1c$p_ttl" $(ttl_filename "$p_username")
-	else echo "$p_ttl" > $(ttl_filename "$p_username")
+	set_time_data "$p_username" "$p_ttl" ttl
+}
+
+
+set_reward () {
+	local p_username="$1" p_reward="$2"
+
+	set_time_data "$p_username" "$p_reward" reward
+}
+
+
+min () {
+	local p_a="$1" p_b="$2"
+
+	if [ "$p_a" -lt "$p_b" ]; then echo "$p_a"
+	else echo "$p_b"
 	fi
 }
 
 
+apply_penalty_if () {
+	local p_username="$1" p_ttl="$2"
+
+	local v_min_ttl_2_keep=10 v_reward v_penalty_2_apply
+	if [ "$p_ttl" -gt "$v_min_ttl_2_keep" ]; then
+		v_reward=$(get_reward "$p_username")
+		if [ "$v_reward" -lt 0 ]; then
+			v_penalty_2_apply=$(			\
+				min				\
+					$(( "$p_ttl" - "$v_min_ttl_2_keep" )) \
+					$(( -"$v_reward" ))	\
+			)
+			p_ttl=$(("$p_ttl" - "$v_penalty_2_apply"))
+			set_reward		\
+				"$p_username"	\
+				$(( "$v_reward" + "$v_penalty_2_apply" ))
+		fi
+	fi
+	echo "$p_ttl"
+}
+
+
+apply_reward_if () {
+	local p_username="$1" p_ttl="$2" p_low_ttl_threshold="$3"
+
+	local v_reward_2_apply=0 v_reward
+	if [ "$p_ttl" -le "$p_low_ttl_threshold" ]; then
+		v_reward=$(get_reward "$p_username")
+		if [ "$v_reward" -gt 0 ]; then
+			v_reward_2_apply=$(				\
+				min					\
+					$((				\
+						$p_low_ttl_threshold -	\
+						$p_ttl + 1		\
+					)) 				\
+					"$v_reward"			\
+				)
+			set_reward		\
+				"$p_username"	\
+				$(( "$v_reward" - "$v_reward_2_apply" ))
+		fi
+	fi
+	echo $(( "$p_ttl" + "$v_reward_2_apply" ))
+}
+
+
 go_check () {
-local I
+local I v_low_ttl_threshold=5
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
         /usr/bin/users | /bin/grep -q $I
         if [ $? -eq 0 ]; then
@@ -127,9 +219,11 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
                 else
 			C=$(get_ttl_time "$I")
                 fi
+		C=$(apply_penalty_if "$I" "$C")
+		C=$(apply_reward_if "$I" "$C" "$v_low_ttl_threshold")
 		set_ttl "$I" "$C"
 		# check time
-		if [ $C -le 5 ]; then
+		if [ $C -le "$v_low_ttl_threshold" ]; then
         	        if [ ! -e /tmp/kidtimer.shutdown.$I ]; then
         	                /usr/bin/passwd $I -l
         	                go_logout $I
@@ -158,9 +252,22 @@ done
 }
 
 
+reset_time_data () {
+	local p_username="$1" p_fieldname="$2"
+
+	local v_default_time
+	case "$p_fieldname" in
+		ttl) v_default_time=$(get_ttl_time "$p_username") ;;
+		reward) v_default_time=0 ;;
+	esac
+	set_time_data "$p_username" "$v_default_time" "$p_field"
+}
+
+
 reset_ttl () {
 	local p_username="$1"
-	set_ttl "$p_username" $(get_ttl_time "$p_username")
+
+	reset_time_data "$p_username" ttl
 }
 
 
@@ -271,22 +378,45 @@ go_reset_time () {
 
 
 go_addtime () {
-U=$KID
-A=$Time
+	local v_username="$KID" v_time="$Time"
+
+	increase_time_field "$v_username" "$v_time" ttl
+}
+
+
+addreward () {
+	local v_username="$KID" v_time="$Time"
+
+	increase_time_field "$v_username" "$v_time" reward
+}
+
+
+increase_time_field () {
+local U="$1" A="$2" p_field="$3"
 grep -q $U $configdir/kid.list
 if [ $? -eq 0 ]; then 
 	if [ "$A" == "reset" ]; then
-		go_reset_time "$U"
-        	exit 0
+		reset_time_data "$U" "$p_field"
 	elif [ "$A" == "" ]; then
 	        go_echo_error
-		#english: Syntax: addtime <user> <minutes|reset>
-	        echo "`/bin/sed -n '22p' $basedir/locale/$LANG`"
+		case "$p_field" in
+			ttl)
+				#english: Syntax: addtime <user> <minutes|reset>
+				echo "`/bin/sed -n '22p' $basedir/locale/$LANG`"
+			;;
+			reward)
+				#english:
+				# Syntax: addreward <user> <minutes|reset>
+				echo "`/bin/sed -n '23p' $basedir/locale/$LANG`"
+			;;
+		esac
 	        exit 1
 	else        
-		set_ttl "$U" $(( $(get_ttl "$U") + A ))
-		get_time
+		set_time_data	\
+			"$U" $(( $(get_time_data "$U" "$p_field") + A )) \
+			"$p_field"
 	fi
+	get_time
 else
 	go_echo_error
 	#english: User not setup.
@@ -295,11 +425,17 @@ else
 fi
 }
 
+get_reward () {
+	local p_username="$1"
+
+	get_time_data "$p_username" reward
+}
+
 
 get_time () {
 local v_ttl=$(get_ttl "$KID")
 if [ -n "$v_ttl" ]; then
-	echo "$v_ttl"
+	echo "$v_ttl "$(get_reward "$KID")
 else
 	echo
 	#english: User not setup.
@@ -425,6 +561,7 @@ echo
 echo "Commands:"
 echo "--------------------------------------------------------------------------------"
 echo "addtime <user> <minutes> ... Increases allowed time for the day."
+echo "addreward <user> <minutes> ... Increases persistent reward balance."
 echo "gettime <user> ... Prints remaining time for the day."
 echo "reset <user> ... Reset time for the day."
 echo "logout <user> ... Starts logout sequence for user."
@@ -490,6 +627,8 @@ fi
 
 case "$COMMAND" in
 addtime) go_addtime
+        ;;
+addreward) addreward
         ;;
 reset) go_reset_time "$KID"
         ;;

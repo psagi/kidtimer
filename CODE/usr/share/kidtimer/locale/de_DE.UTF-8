@@ -20,3 +20,4 @@ Benutzer nicht eingerichtet.
 Fehler. Fehlende Paket-Abhängigkeiten.
 Bitte installieren Sie die fehlenden Pakete mit Hilfe der folgenden Zeile;
 Syntax: addtime <user> <minutes|reset>
+Syntax: addreward <user> <minuten|reset>

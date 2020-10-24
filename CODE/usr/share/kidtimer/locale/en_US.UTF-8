@@ -20,3 +20,4 @@ User not setup.
 Error. Missing package dependencies.
 Please install using the following line;
 Syntax: addtime <user> <minutes|reset>
+Syntax: addreward <user> <minutes|reset>
