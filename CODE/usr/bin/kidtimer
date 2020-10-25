@@ -69,11 +69,11 @@ echo
 has_ttl_been_touched_in_the_last_minute () {
 	local p_username="$1"
 
-	[ -e $(ttl_filename "$p_username") ] &&					\
+	[ -e $(ttl_filename "$p_username") ] &&				\
 		[							\
 			$((						\
 				$(date +%s) -				\
-				$(stat -c "%Y" $(ttl_filename "$p_username") )	\
+				$(stat -c "%Y" $(ttl_filename "$p_username") ) \
 			)) -lt 59					\
 		]
 }
@@ -97,11 +97,6 @@ ttl_filename () {
 get_time_data () {
 	local p_username="$1" p_field="$2"
 
-	local v_rownum
-	case "$p_field" in
-		ttl) v_rownum=1 ;;
-		reward) v_rownum=2 ;;
-	esac
 	[ -e $(ttl_filename "$p_username") ] &&	\
 		sed -n $(rownum "$p_field")p $(ttl_filename "$p_username")
 }
@@ -120,18 +115,25 @@ rownum () {
 	case "$p_field" in
 		ttl) echo 1 ;;
 		reward) echo 2 ;;
+		release_status) echo 3 ;;
 	esac
 }
 
 
 set_time_data () {
-	local p_username="$1" p_time="$2" p_field="$3"
+	local p_username="$1" p_data="$2" p_field="$3"
 
+	local v_rownum=$(rownum "$p_field")
+#echo "set_time_data(): v_rownum=$v_rownum" >&2
 	if [ ! -e $(ttl_filename "$p_username") ]; then
-		echo > $(ttl_filename "$p_username")
-		echo >> $(ttl_filename "$p_username")
+		touch $(ttl_filename "$p_username")
 	fi
-	sed -i $(rownum "$p_field")"c$p_time" $(ttl_filename "$p_username")
+#echo "set_time_data(): v_rownum=$v_rownum" >&2
+	while [			\
+		$(wc -l $(ttl_filename "$p_username") | cut -d " " -f 1) -lt \
+		"$v_rownum"	\
+	]; do echo >> $(ttl_filename "$p_username"); done
+	sed -i "$v_rownum"$'c\\\n'"$p_data" $(ttl_filename "$p_username")
 }
 
 set_ttl () {
@@ -202,6 +204,11 @@ apply_reward_if () {
 	echo $(( "$p_ttl" + "$v_reward_2_apply" ))
 }
 
+is_released () {
+	local p_username="$1"
+
+	[ "$(get_release_status $p_username)" == released ]
+}
 
 go_check () {
 local I v_low_ttl_threshold=5
@@ -211,6 +218,8 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
 		if has_ttl_been_touched_in_the_last_minute "$I"; then
 #echo "go_check(): \$I = $I" 1>&2
 			clean_up_logout_sequence "$I"
+			is_released "$I" && return 0
+			go_hourly
 		fi
 #echo "go_check(): \$I = $I" 1>&2
 		C=$(get_ttl "$I")
@@ -260,7 +269,7 @@ reset_time_data () {
 		ttl) v_default_time=$(get_ttl_time "$p_username") ;;
 		reward) v_default_time=0 ;;
 	esac
-	set_time_data "$p_username" "$v_default_time" "$p_field"
+	set_time_data "$p_username" "$v_default_time" "$p_fieldname"
 }
 
 
@@ -276,6 +285,7 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
         /usr/bin/stat -c %y $(ttl_filename "$I") | /bin/grep -q $Cdate
         if [ ! $? -eq 0 ]; then
 		reset_ttl "$I"
+		clear_released "$I"
         fi
 done
 go_hourly
@@ -285,7 +295,7 @@ go_hourly
 go_hourly () {
 if [ -s $configdir/kid.list ]; then
         for I in `/bin/cat $configdir/kid.list | sort -u`; do
-                if [ -e $scheduledir/$I ]; then
+                if ! is_released "$I" && [ -e $scheduledir/$I ]; then
                         [ $(get_ttl "$I") -le 0 ] && /usr/bin/passwd $I -l && exit 0
                         [ "$WEEKEND" == "no" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $2 }'`
                         [ "$WEEKEND" == "yes" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $3 }'`
@@ -425,6 +435,7 @@ else
 fi
 }
 
+
 get_reward () {
 	local p_username="$1"
 
@@ -432,10 +443,17 @@ get_reward () {
 }
 
 
+get_release_status () {
+	local p_username="$1"
+
+	get_time_data "$p_username" release_status
+}
+
+
 get_time () {
 local v_ttl=$(get_ttl "$KID")
 if [ -n "$v_ttl" ]; then
-	echo "$v_ttl "$(get_reward "$KID")
+	echo "$v_ttl "$(get_reward "$KID")" "$(get_release_status "$KID")
 else
 	echo
 	#english: User not setup.
@@ -562,6 +580,9 @@ echo "Commands:"
 echo "--------------------------------------------------------------------------------"
 echo "addtime <user> <minutes> ... Increases allowed time for the day."
 echo "addreward <user> <minutes> ... Increases persistent reward balance."
+echo "release <user> ... Suspends time control without touching daily time and"
+echo "	reward balance"
+echo "control <user> ... Resumes time control"
 echo "gettime <user> ... Prints remaining time for the day."
 echo "reset <user> ... Reset time for the day."
 echo "logout <user> ... Starts logout sequence for user."
@@ -617,6 +638,35 @@ echo "--------------------------------------------------------------------------
 #fi
 #}
 
+set_released () {
+	local p_username="$1"
+
+	set_time_data "$p_username" "released" release_status
+}
+
+
+clear_released () {
+	local p_username="$1"
+
+	set_time_data "$p_username" "" release_status
+}
+
+
+release () {
+	local p_username="$1"
+
+	set_released "$p_username"
+	go_echo_done
+}
+
+
+control () {
+	local p_username="$1"
+
+	clear_released "$p_username"
+	go_echo_done
+}
+
 
 ###################### Code ####################
 ################################################
@@ -629,6 +679,10 @@ case "$COMMAND" in
 addtime) go_addtime
         ;;
 addreward) addreward
+        ;;
+release) release "$KID"
+        ;;
+control) control "$KID"
         ;;
 reset) go_reset_time "$KID"
         ;;
