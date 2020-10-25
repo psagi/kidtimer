@@ -1,3 +1,10 @@
+kidtimer (2.5-1) UNRELEASED; urgency=low
+
+  * Reward/penalty feature implemented
+  * Release/control command added for temporarily suspending time control.
+
+ -- Peter Sági <psagi@freemail.hu>  Tue, 20 Oct 2020 18:12:09 +0200
+ 
 kidtimer (2.4-1) UNRELEASED; urgency=low
 
   * DB directory can now be moved to file share. DB files editable directly.

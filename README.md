@@ -5,11 +5,7 @@ I have been looking for a solution to this for a long time. I have two kids and 
 
 Kidtimer should work on any recent version of Ubuntu, both 32 & 64 bit. Should also work on Debian too. It uses standard Linux utilities and notify-send (for user notification).
 
-### NOTE ###
-* The "at" utility is required for kidtimer to work properly.
-* Kidtimer will now check when run manually, letting you know what needs to be installed.
-
-So this is how to install it and use it;
+This is how to install it and use it;
 
 1. Download the latest kidtimer deb file;
 https://github.com/psagi/kidtimer/raw/master/DEBS/kidtimer_latest.deb
@@ -50,6 +46,11 @@ Features:
 Allow your kid specific hours of the day to access the computer, both weekday and weekend.
 
 Set maximum amount of time, both weekday and weekend.
+
+Keeps track of reward balance that is persistent across days. 
+
+Time control can be temporarily suspended/resumed within the day.
+
 
 Cronjobs:
 
