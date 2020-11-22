@@ -1,3 +1,9 @@
+kidtimer (2.6-1) UNRELEASED; urgency=low
+
+  * FIX: Let the user log in when has got extra time
+
+ -- Peter Sági <psagi@freemail.hu>  Sun, 22 Nov 2020 17:16:21 +0100
+ 
 kidtimer (2.5-1) UNRELEASED; urgency=low
 
   * Reward/penalty feature implemented
