@@ -213,14 +213,13 @@ is_released () {
 go_check () {
 local I v_low_ttl_threshold=5
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
-        /usr/bin/users | /bin/grep -q $I
-        if [ $? -eq 0 ]; then
-		if has_ttl_been_touched_in_the_last_minute "$I"; then
+	if has_ttl_been_touched_in_the_last_minute "$I"; then
 #echo "go_check(): \$I = $I" 1>&2
-			clean_up_logout_sequence "$I"
-			is_released "$I" && return 0
-			go_hourly
-		fi
+		clean_up_logout_sequence "$I"
+		go_hourly
+	fi
+        /usr/bin/users | /bin/grep -q $I
+        if [ $? -eq 0 ] && ! is_released "$I"; then
 #echo "go_check(): \$I = $I" 1>&2
 		C=$(get_ttl "$I")
                 if [ -n "$C" ]; then
