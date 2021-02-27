@@ -1,3 +1,9 @@
+kidtimer (2.7-1) UNRELEASED; urgency=low
+
+  * Set different ttl time for Saturday and Sunday
+
+ -- Peter Sági <psagi@freemail.hu>  Sun, 21 Feb 2021 21:03:21 +0100
+
 kidtimer (2.6-1) UNRELEASED; urgency=low
 
   * FIX: Let the user log in when has got extra time

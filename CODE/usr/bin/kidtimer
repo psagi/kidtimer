@@ -14,8 +14,8 @@ TUI=0
 HOUR=`/bin/date +%H`
 DOW=`/bin/date +%u`
 WEEKEND="no"
-[ "$DOW" == "6" ] && WEEKEND="yes"
-[ "$DOW" == "7" ] && WEEKEND="yes"
+[ "$DOW" == "6" ] && WEEKEND="sat"
+[ "$DOW" == "7" ] && WEEKEND="sun"
 [ ! -e $configdir/kid.list ] && touch $configdir/kid.list
 [ ! -e $basedir/locale/$LANG ] && LANG="en_US.UTF-8"
 
@@ -246,7 +246,9 @@ done
 
 get_ttl_time () {
         [ "$WEEKEND" == "no" ] && /bin/cat $scheduledir/$1 | /bin/grep ^MAX | /usr/bin/awk '{ print $2 }'
-        [ "$WEEKEND" == "yes" ] && /bin/cat $scheduledir/$1 | /bin/grep ^MAX | /usr/bin/awk '{ print $3 }'
+        [ "$WEEKEND" == "sat" ] && /bin/cat $scheduledir/$1 | /bin/grep ^MAX | /usr/bin/awk '{ print $3 }'
+        [ "$WEEKEND" == "sun" ] && /bin/cat $scheduledir/$1 |
+		/bin/grep ^MAX | /usr/bin/awk '{ print ($4 != "" ? $4: $3) }'
 }
 
 
@@ -297,7 +299,7 @@ if [ -s $configdir/kid.list ]; then
                 if ! is_released "$I" && [ -e $scheduledir/$I ]; then
                         [ $(get_ttl "$I") -le 0 ] && /usr/bin/passwd $I -l && exit 0
                         [ "$WEEKEND" == "no" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $2 }'`
-                        [ "$WEEKEND" == "yes" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $3 }'`
+                        [ ! "$WEEKEND" == "no" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $3 }'`
                         if [ "$R" == "y" ]; then
                                 /usr/bin/passwd $I -u
                         else
