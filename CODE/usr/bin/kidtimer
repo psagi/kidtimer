@@ -207,7 +207,10 @@ apply_reward_if () {
 is_released () {
 	local p_username="$1"
 
-	[ "$(get_release_status $p_username)" == released ]
+	(								\
+		[ "$(get_release_status $p_username)" == released ] ||	\
+		[ "$(get_schedule $p_username)" == r ]			\
+	)
 }
 
 go_check () {
@@ -281,6 +284,54 @@ reset_ttl () {
 }
 
 
+is_user_locked () {
+	local p_username="$1"
+
+	[							\
+		"$(						\
+			/usr/bin/passwd -S "$p_username" |	\
+				/usr/bin/cut -d " " -f 2	\
+		)" == L					\
+	]
+}
+
+
+set_user_lock () {
+	local p_username="$1" p_is_2B_locked="$2"
+#echo "set_user_lock($p_username, $p_is_2B_locked)" >&2
+	is_user_locked "$p_username"
+	if [ "$?" != "$p_is_2B_locked" ]; then
+		if [ "$p_is_2B_locked" == 0 ]; then
+			/usr/bin/passwd "$p_username" -l
+	                (				\
+				/usr/bin/users | /bin/grep -q "$p_username" && \
+				go_logout "$p_username"	\
+			)
+		else clean_up_logout_sequence "$p_username"
+		fi
+	fi
+}
+
+
+get_schedule () {
+	local p_username="$1"
+
+        if [ ! -e $scheduledir/$I ]; then echo y
+	else
+	        (							\
+			[ "$WEEKEND" == "no" ] &&			\
+			/bin/grep "^$HOUR" "$scheduledir/$p_username" |	\
+				/usr/bin/awk '{ print $2 }'		\
+		)
+		(							\
+			[ ! "$WEEKEND" == "no" ] &&			\
+			/bin/grep "^$HOUR" "$scheduledir/$p_username" |	\
+				/usr/bin/awk '{ print $3 }'		\
+		)
+	fi
+}
+
+
 go_daily () {
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
         /usr/bin/stat -c %y $(ttl_filename "$I") | /bin/grep -q $Cdate
@@ -296,18 +347,12 @@ go_hourly
 go_hourly () {
 if [ -s $configdir/kid.list ]; then
         for I in `/bin/cat $configdir/kid.list | sort -u`; do
-                if ! is_released "$I" && [ -e $scheduledir/$I ]; then
-                        [ $(get_ttl "$I") -le 0 ] && /usr/bin/passwd $I -l && exit 0
-                        [ "$WEEKEND" == "no" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $2 }'`
-                        [ ! "$WEEKEND" == "no" ] && R=`/bin/grep ^$HOUR $scheduledir/$I | /usr/bin/awk '{ print $3 }'`
-                        if [ "$R" == "y" ]; then
-                                /usr/bin/passwd $I -u
-                        else
-                                /usr/bin/passwd $I -l
-                                /usr/bin/users | /bin/grep -q $I && go_logout $I
-                        fi
-                fi
-        done
+		! is_released "$I" && ( 			\
+			[ $(get_schedule "$I") == "n" ] ||	\
+			[ $(get_ttl "$I") -le 0 ]		\
+		)
+		set_user_lock "$I" "$?"
+	done
 fi
 }
 
