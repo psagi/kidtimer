@@ -116,6 +116,7 @@ rownum () {
 		ttl) echo 1 ;;
 		reward) echo 2 ;;
 		release_status) echo 3 ;;
+		last_reset) echo 4 ;;
 	esac
 }
 
@@ -281,6 +282,7 @@ reset_ttl () {
 	local p_username="$1"
 
 	reset_time_data "$p_username" ttl
+	set_time_data "$p_username" "$Cdate" last_reset
 }
 
 
@@ -335,7 +337,8 @@ get_schedule () {
 
 go_daily () {
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
-        /usr/bin/stat -c %y $(ttl_filename "$I") | /bin/grep -q $Cdate
+#        /usr/bin/stat -c %y $(ttl_filename "$I") | /bin/grep -q $Cdate
+        get_last_reset "$I" | /bin/grep -q $Cdate
         if [ ! $? -eq 0 ]; then
 		reset_ttl "$I"
 		clear_released "$I"
@@ -494,6 +497,12 @@ get_release_status () {
 	local p_username="$1"
 
 	get_time_data "$p_username" release_status
+}
+
+get_last_reset () {
+	local p_username="$1"
+
+	get_time_data "$p_username" last_reset
 }
 
 
