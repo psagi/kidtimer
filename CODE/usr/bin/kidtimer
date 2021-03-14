@@ -316,19 +316,20 @@ set_user_lock () {
 get_schedule () {
 	local p_username="$1"
 
-        if [ ! -e $scheduledir/$I ]; then echo y
-	else
-	        (							\
-			[ "$WEEKEND" == "no" ] &&			\
-			/bin/grep "^$HOUR" "$scheduledir/$p_username" |	\
-				/usr/bin/awk '{ print $2 }'		\
-		)
-		(							\
-			[ ! "$WEEKEND" == "no" ] &&			\
-			/bin/grep "^$HOUR" "$scheduledir/$p_username" |	\
-				/usr/bin/awk '{ print $3 }'		\
-		)
+        if [ ! -e $scheduledir/$I ]; then
+		echo y
+		return
 	fi
+	/bin/grep "^$HOUR" "$scheduledir/$p_username" |
+		/usr/bin/awk	\
+			-v p_weekend="$WEEKEND"	-v p_day_of_week="$DOW" '
+			{
+				print (					\
+					NF == 3 ?			\
+					(p_weekend == "no" ? $2 : $3) :	\
+					$(p_day_of_week + 1)		\
+				);
+			}'
 }
 
 

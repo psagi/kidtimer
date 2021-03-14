@@ -1,8 +1,14 @@
+kidtimer (2.9-1) UNRELEASED; urgency=low
+
+  * Full daily time-table handling in schedule
+
+ -- Peter Sági <psagi@freemail.hu>  Tue, 09 Mar 2021 21:23:21 +0100
+
 kidtimer (2.8-1) UNRELEASED; urgency=low
 
   * Timed release feature based on the schedule file
 
- -- Peter Sági <psagi@freemail.hu>  Sun, 21 Feb 2021 21:03:21 +0100
+ -- Peter Sági <psagi@freemail.hu>  Sun, 07 Mar 2021 17:03:21 +0100
 
 kidtimer (2.7-1) UNRELEASED; urgency=low
 
