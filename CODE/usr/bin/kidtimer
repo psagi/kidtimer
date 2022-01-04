@@ -166,7 +166,7 @@ apply_penalty_if () {
 	local v_min_ttl_2_keep=10 v_reward v_penalty_2_apply
 	if [ "$p_ttl" -gt "$v_min_ttl_2_keep" ]; then
 		v_reward=$(get_reward "$p_username")
-		if [ "$v_reward" -lt 0 ]; then
+		if [ -n "$v_reward" ] && [ "$v_reward" -lt 0 ]; then
 			v_penalty_2_apply=$(			\
 				min				\
 					$(( "$p_ttl" - "$v_min_ttl_2_keep" )) \
