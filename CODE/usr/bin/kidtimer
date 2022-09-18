@@ -222,7 +222,7 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
 		clean_up_logout_sequence "$I"
 		go_hourly
 	fi
-        /usr/bin/users | /bin/grep -q $I
+        /usr/bin/users | /bin/grep -q -w $I
         if [ $? -eq 0 ] && ! is_released "$I"; then
 #echo "go_check(): \$I = $I" 1>&2
 		C=$(get_ttl "$I")
@@ -306,7 +306,8 @@ set_user_lock () {
 		if [ "$p_is_2B_locked" == 0 ]; then
 			/usr/bin/passwd "$p_username" -l
 	                (				\
-				/usr/bin/users | /bin/grep -q "$p_username" && \
+				/usr/bin/users |	\
+					/bin/grep -q -w "$p_username" && \
 				go_logout "$p_username"	\
 			)
 		else clean_up_logout_sequence "$p_username"
