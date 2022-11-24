@@ -120,10 +120,36 @@ rownum () {
 	esac
 }
 
+lock_dirname () {
+	local $p_username=$1
+
+	echo "$(ttl_filename "$p_username").lock"
+}
+
+lock_db () {
+	local p_username="$1"
+
+	if ! mkdir "$(lock_dirname "$p_username")";
+		then sleep 5;
+		if ! mkdir "$(lock_dirname "$p_username")"; then
+			go_echo_error;
+			exit 1;
+		fi
+	fi
+	trap "unlock_db $p_username" EXIT
+}
+
+unlock_db () {
+	local p_username="$1"
+
+	trap - EXIT
+	rmdir "$(lock_dirname "$p_username")"
+}
 
 set_time_data () {
 	local p_username="$1" p_data="$2" p_field="$3"
 
+	lock_db "$p_username"
 	local v_rownum=$(rownum "$p_field")
 #echo "set_time_data(): v_rownum=$v_rownum" >&2
 	if [ ! -e $(ttl_filename "$p_username") ]; then
@@ -135,6 +161,7 @@ set_time_data () {
 		"$v_rownum"	\
 	]; do echo >> $(ttl_filename "$p_username"); done
 	sed -i "$v_rownum"$'c\\\n'"$p_data" $(ttl_filename "$p_username")
+	unlock_db "$p_username"
 }
 
 set_ttl () {
