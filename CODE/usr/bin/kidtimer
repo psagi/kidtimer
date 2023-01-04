@@ -129,12 +129,14 @@ lock_dirname () {
 lock_db () {
 	local p_username="$1"
 
-	if ! mkdir "$(lock_dirname "$p_username")";
-		then sleep 5;
+	if ! mkdir "$(lock_dirname "$p_username")"; then
+echo "DEBUG: lock_db(): $p_username already locked. Waiting..." 1>&2
+		sleep 5;
 		if ! mkdir "$(lock_dirname "$p_username")"; then
 			go_echo_error;
 			exit 1;
 		fi
+echo "DEBUG: lock_db(): ...succesfully locked." 1>&2
 	fi
 	trap "unlock_db $p_username" EXIT
 }
@@ -215,7 +217,7 @@ apply_reward_if () {
 	local v_reward_2_apply=0 v_reward
 	if [ "$p_ttl" -le "$p_low_ttl_threshold" ]; then
 		v_reward=$(get_reward "$p_username")
-		if [ "$v_reward" -gt 0 ]; then
+		if [ -n "$v_reward" ] && [ "$v_reward" -gt 0 ]; then
 			v_reward_2_apply=$(				\
 				min					\
 					$((				\

@@ -1,3 +1,8 @@
+kidtimer (2.12-1) UNRELEASED; urgency=low
+
+  * FIX: basic concurency handling on .ttl files (against file loss due to race condition)
+
+ -- Peter Sági <psagi@freemail.hu>  Wed, 26 Oct 2022 21:30:21 +0100
 kidtimer (2.11-1) UNRELEASED; urgency=low
 
   * FIX: safer detection of logged-in users
