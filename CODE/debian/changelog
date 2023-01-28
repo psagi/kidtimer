@@ -1,13 +1,21 @@
+kidtimer (2.13-1) UNRELEASED; urgency=low
+
+  * FIX: logged in user detection
+
+ -- Peter Sági <psagi@freemail.hu>  Wed, 06 Jan 2023 14:37:21 +0100
+
 kidtimer (2.12-1) UNRELEASED; urgency=low
 
   * FIX: basic concurency handling on .ttl files (against file loss due to race condition)
 
  -- Peter Sági <psagi@freemail.hu>  Wed, 26 Oct 2022 21:30:21 +0100
+
 kidtimer (2.11-1) UNRELEASED; urgency=low
 
   * FIX: safer detection of logged-in users
 
  -- Peter Sági <psagi@freemail.hu>  Sun, 14 Mar 2021 18:16:21 +0100
+
 kidtimer (2.10-1) UNRELEASED; urgency=low
 
   * FIXes kidtimer daily not resetting when the ttl file has been touched today
