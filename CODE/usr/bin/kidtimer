@@ -18,6 +18,7 @@ WEEKEND="no"
 [ "$DOW" == "7" ] && WEEKEND="sun"
 [ ! -e $configdir/kid.list ] && touch $configdir/kid.list
 [ ! -e $basedir/locale/$LANG ] && LANG="en_US.UTF-8"
+g_my_pid=$$
 
 #arguments
 [ $# -eq 0 ] && TUI=1
@@ -121,31 +122,82 @@ rownum () {
 }
 
 lock_dirname () {
-	local $p_username=$1
+	local p_username="$1"
 
 	echo "$(ttl_filename "$p_username").lock"
+}
+
+my_lock () {
+	local p_username="$1"
+
+	echo "$(lock_dirname "$p_username").$(hostname).$g_my_pid"
+}
+
+is_locked_only_by_me () {
+	local p_username="$1"
+#echo "DEBUG: is_locked_only_by_me($p_username)" 1>&2
+
+	[ -e "$(my_lock "$p_username")" ] && ! is_locked_by_others "$p_username"
+}
+
+is_locked_by_others () {
+	local p_username="$1"
+#echo "DEBUG: is_locked_by_others($p_username)" 1>&2
+
+	local v_locks
+#echo "DEBUG: is_locked_by_others(): ttldir: $(ls -d $(ttl_filename "$p_username")*)" 1>&2
+	v_locks=$(ls -d "$(lock_dirname "$p_username")."* 2>/dev/null)
+#	v_locks=$(ls -d "$(lock_dirname "$p_username")."*)
+#echo "DEBUG: is_locked_by_others(): \$v_locks = $v_locks" 1>&2
+	[ -n "$v_locks" ] || return 1
+#	echo $v_locks | xargs -n 1 | grep -v $(my_lock $p_username) >/dev/null
+	echo "$v_locks" | grep -v "$(my_lock "$p_username")" >/dev/null
+}
+
+put_lock () {
+	local p_username="$1"
+#echo "DEBUG: put_lock($p_username)" 1>&2
+
+	mkdir "$(my_lock "$p_username")" 2>/dev/null &&	\
+		trap "unlock_db \"$p_username\"" EXIT
 }
 
 lock_db () {
 	local p_username="$1"
 
-	if ! mkdir "$(lock_dirname "$p_username")"; then
-echo "DEBUG: lock_db(): $p_username already locked. Waiting..." 1>&2
-		sleep 5;
-		if ! mkdir "$(lock_dirname "$p_username")"; then
-			go_echo_error;
-			exit 1;
+	local v_retries=3
+	while ! is_locked_only_by_me "$p_username" && [ $v_retries -ne 0 ]; do
+#is_locked_only_by_me "$p_username"
+#echo "DEBUG: lock_db(): is_locked_only_by_me $p_username = $?" 1>&2
+		unlock_db "$p_username"
+		# break synchronization of processes
+		sleep $(( ($RANDOM + $$) % 5 + 1 ))
+		if ! is_locked_by_others "$p_username"; then
+#echo "DEBUG: lock_db(): is_locked_by_others NOT" 1>&2
+			if ! put_lock "$p_username"; then
+				go_echo_error
+				exit 1
+			fi
+		else
+echo "DEBUG: lock_db(): $p_username already locked. Waiting... $v_retries" 1>&2
+			((--v_retries))
 		fi
-echo "DEBUG: lock_db(): ...succesfully locked." 1>&2
+		sleep 1
+	done
+	if [ $v_retries -eq 0 ]; then
+		go_echo_error
+		exit 1
 	fi
-	trap "unlock_db $p_username" EXIT
+#echo "DEBUG: lock_db(): ...succesfully locked." 1>&2
 }
 
 unlock_db () {
 	local p_username="$1"
+#echo "DEBUG: unlock_db($p_username)" 1>&2
 
+	local v_my_lock=$(my_lock "$p_username")
 	trap - EXIT
-	rmdir "$(lock_dirname "$p_username")"
+	[ -e "$v_my_lock" ] && rmdir "$v_my_lock"
 }
 
 set_time_data () {
