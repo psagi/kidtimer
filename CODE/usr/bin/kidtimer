@@ -440,7 +440,10 @@ if [ -s $configdir/kid.list ]; then
         for I in `/bin/cat $configdir/kid.list | sort -u`; do
 		! is_released "$I" && ( 			\
 			[ $(get_schedule "$I") == "n" ] ||	\
-			[ $(get_ttl "$I") -le 0 ]		\
+			(					\
+				[ $(get_ttl "$I") -le 0 ] &&	\
+				[ $(get_reward "$I") -le 0 ]	\
+			)					\
 		)
 		set_user_lock "$I" "$?"
 	done
