@@ -1,3 +1,11 @@
+kidtimer (2.16-1) UNRELEASED; urgency=low
+
+  * FIX: fixed manual change autodetection that prevented proper .ttl counting
+   on 'kidtimer check' and termination of user session. (This was due to longer
+   lead time of modifying the .ttl file caused by improved concurency handling.)
+
+ -- Peter Sági <psagi@freemail.hu>  Tue, 31 Jan 2023 14:52:21 +0100
+
 kidtimer (2.15-1) UNRELEASED; urgency=low
 
   * FIX: user is now unlocked also when (only) reward is positive

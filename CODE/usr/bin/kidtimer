@@ -75,7 +75,7 @@ has_ttl_been_touched_in_the_last_minute () {
 			$((						\
 				$(date +%s) -				\
 				$(stat -c "%Y" $(ttl_filename "$p_username") ) \
-			)) -lt 59					\
+			)) -lt 50					\
 		]
 }
 
@@ -306,12 +306,11 @@ go_check () {
 local I v_low_ttl_threshold=5
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
 	if has_ttl_been_touched_in_the_last_minute "$I"; then
-#echo "go_check(): \$I = $I" 1>&2
+#echo "DEBUG: go_check(): ttl touch detected for $I" 1>&2
 		clean_up_logout_sequence "$I"
 		go_hourly
 	fi
         if is_logged_in "$I" && ! is_released "$I"; then
-#echo "go_check(): \$I = $I" 1>&2
 		C=$(get_ttl "$I")
                 if [ -n "$C" ]; then
                         C=$((C - 1))
@@ -436,6 +435,7 @@ go_hourly
 
 
 go_hourly () {
+	local I
 if [ -s $configdir/kid.list ]; then
         for I in `/bin/cat $configdir/kid.list | sort -u`; do
 		! is_released "$I" && ( 			\
