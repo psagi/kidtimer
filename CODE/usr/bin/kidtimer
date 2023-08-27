@@ -608,6 +608,9 @@ else
 fi
 }
 
+get_status () {
+   is_user_locked "$USER" 
+}
 
 go_tui () {
 go_command_list
@@ -730,6 +733,7 @@ echo "release <user> ... Suspends time control without touching daily time and"
 echo "	reward balance"
 echo "control <user> ... Resumes time control"
 echo "gettime <user> ... Prints remaining time for the day."
+echo "getstatus ... Returns restriction status of current user."
 echo "reset <user> ... Reset time for the day."
 echo "logout <user> ... Starts logout sequence for user."
 echo "hourly ... Enables/disables user access based on the schedule."
@@ -833,6 +837,8 @@ control) control "$KID"
 reset) go_reset_time "$KID"
         ;;
 gettime) get_time
+        ;;
+getstatus) get_status; exit
         ;;
 logout) go_logout $KID
         ;;
