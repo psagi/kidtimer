@@ -6,6 +6,6 @@ Package: kidtimer
 Section: utils
 Priority: optional
 Architecture: all
-Depends: at, libnotify-bin, bash, coreutils, grep, sed, passwd, systemd, hostname, findutils
+Depends: at, libnotify-bin, bash, coreutils, grep, sed, passwd, systemd, hostname, findutils, acl, psmisc
 Homepage: http://github.com/psagi/kidtimer
 Description: Set daily limits on computer time.

@@ -6,9 +6,11 @@
 #LANG="en_US.UTF-8" #unremark to change preferred language.
 basedir="/usr/share/kidtimer"
 dbdir="/var/local/kidtimer"
+#dbdir="./kidtimer"
 scheduledir="$dbdir/schedule"
 timedir="$dbdir/time"
 configdir="$dbdir"
+blacklisted_executables_file="$configdir/executables.blacklist"
 Cdate=`/bin/date +%Y-%m-%d`
 TUI=0
 HOUR=`/bin/date +%H`
@@ -83,7 +85,7 @@ has_ttl_been_touched_in_the_last_minute () {
 clean_up_logout_sequence () {
 	local p_username="$1"
 
-	/usr/bin/passwd "$p_username" -u
+	restore_exec_perms "$p_username"
 	go_clean_jobs "$p_username"
 }
 
@@ -200,6 +202,22 @@ unlock_db () {
 	[ -e "$v_my_lock" ] && rmdir "$v_my_lock"
 }
 
+restriction_status_filename () {
+   local p_username="$1"
+   echo "$dbdir.local/$p_username.status"
+}
+
+set_restriction_status () {
+   local p_username="$1" p_restriction_status="$2"
+
+   echo "$p_restriction_status" > $(restriction_status_filename "$p_username")
+}
+
+get_restriction_status () {
+   local p_username="$1"
+   cat $(restriction_status_filename "$p_username")
+}
+
 set_time_data () {
 	local p_username="$1" p_data="$2" p_field="$3"
 
@@ -302,6 +320,33 @@ is_logged_in () {
 		grep -v "^State=closing$" >/dev/null
 }
 
+set_exec_perms () {
+   local p_username="$1"
+   local p_is_revoke="$2"
+
+   if [ ! -e "$blacklisted_executables_file" ]; then return; fi
+
+   local p_command="setfacl"
+#   local p_command="echo setfacl"
+   if "$p_is_revoke"; then p_command="$p_command -m user:$p_username:---";
+   else p_command="$p_command -x user:$p_username";
+   fi
+   while read -r executable; do
+      $p_command "$executable"
+   done < "$blacklisted_executables_file"
+}
+
+revoke_exec_perms () {
+   local p_username="$1"
+   set_exec_perms "$p_username" true
+}
+
+restore_exec_perms () {
+   local p_username="$1"
+   set_exec_perms "$p_username" false
+}
+
+
 go_check () {
 local I v_low_ttl_threshold=5
 for I in `/bin/cat $configdir/kid.list | sort -u`; do
@@ -323,8 +368,7 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
 		# check time
 		if [ $C -le "$v_low_ttl_threshold" ]; then
         	        if [ ! -e /tmp/kidtimer.shutdown.$I ]; then
-        	                /usr/bin/passwd $I -l
-        	                go_logout $I
+			   set_user_lock "$I" 0
         	        fi
         	fi
         else
@@ -375,12 +419,7 @@ reset_ttl () {
 is_user_locked () {
 	local p_username="$1"
 
-	[							\
-		"$(						\
-			/usr/bin/passwd -S "$p_username" |	\
-				/usr/bin/cut -d " " -f 2	\
-		)" == L					\
-	]
+	[ $(get_restriction_status "$p_username") == "restricted" ]
 }
 
 
@@ -390,12 +429,15 @@ set_user_lock () {
 	is_user_locked "$p_username"
 	if [ "$?" != "$p_is_2B_locked" ]; then
 		if [ "$p_is_2B_locked" == 0 ]; then
-			/usr/bin/passwd "$p_username" -l
+			revoke_exec_perms "$p_username"
 	                (				\
 				is_logged_in "$p_username" && \
 				go_logout "$p_username"	\
 			)
-		else clean_up_logout_sequence "$p_username"
+			set_restriction_status "$p_username" "restricted"
+		else
+		  clean_up_logout_sequence "$p_username"
+		  set_restriction_status "$p_username" "unrestricted"
 		fi
 	fi
 }
@@ -502,7 +544,8 @@ go_killall () {
 K=$1
 /bin/rm -f /tmp/killall.bash.$K
 echo "#!/bin/bash" > /tmp/killall.bash.$K
-echo "/usr/bin/pkill -KILL -u $K" >> /tmp/killall.bash.$K
+echo "cat \"$blacklisted_executables_file\" |" >> /tmp/killall.bash.$K
+echo "   xargs -d \"\n\" /usr/bin/killall -KILL -u $K" >> /tmp/killall.bash.$K
 echo "/bin/rm -rf /tmp/kidtimer.shutdown.$K" >> /tmp/killall.bash.$K
 echo "/bin/rm -f /tmp/killall.bash.$K" >> /tmp/killall.bash.$K
 echo "/bin/bash /tmp/killall.bash.$K" | setup_job 6
@@ -594,7 +637,6 @@ get_last_reset () {
 
 	get_time_data "$p_username" last_reset
 }
-
 
 get_time () {
 local v_ttl=$(get_ttl "$KID")
