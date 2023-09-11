@@ -6,7 +6,6 @@
 #LANG="en_US.UTF-8" #unremark to change preferred language.
 basedir="/usr/share/kidtimer"
 dbdir="/var/local/kidtimer"
-#dbdir="./kidtimer"
 scheduledir="$dbdir/schedule"
 timedir="$dbdir/time"
 configdir="$dbdir"
@@ -315,9 +314,11 @@ is_released () {
 
 is_logged_in () {
 	local p_username="$1"
-#	loginctl --no-pager --no-legend list-users | grep -q -w "$p_username"
-	loginctl --property=State show-user "$p_username" 2>/dev/null |
-		grep -v "^State=closing$" >/dev/null
+#	loginctl --property=State show-user "$p_username" 2>/dev/null |
+#		grep -v "^State=closing$" >/dev/null
+	ps -U "$p_username" -o pid --no-headers |
+		xargs -i realpath -q /proc/{}/exe |
+		grep -F -f "$blacklisted_executables_file" > /dev/null
 }
 
 set_exec_perms () {
@@ -531,7 +532,7 @@ D=`/usr/bin/who | grep $K | grep -m1 "(:" | cut -d\( -f2 | sed s/\)// | sed s/:/
 if [ -e $basedir/locale/$LANG ]; then
 	MSG=`/bin/sed -n "$LINE"p $basedir/locale/$LANG`
 else
-	MSG="Your computer time will end in $TEXT minutes."
+	MSG="Your game time will end in $TEXT minutes."
 fi
 echo "/bin/su $K -c 'DISPLAY=:$D /usr/bin/notify-send -i $basedir/icons/kidtimer-$TEXT.png \
 	\"ALERT\" \"$MSG\"'" >> $TMPFILE
