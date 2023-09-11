@@ -1,0 +1,23 @@
+#hungarian
+A jákékidőd 1 perc múlva lejár.
+A jákékidőd 2 perc múlva lejár.
+A jákékidőd 3 perc múlva lejár.
+A jákékidőd 4 perc múlva lejár.
+A jákékidőd 5 perc múlva lejár.
+Felhasználó korlátozásainak beállítása.
+Felhasználó korlátozásainak módosítása.
+Felhasználó korlátozásainak törlése.
+Beállított felhasználók megjelenítése.
+Kilépés.
+Hiba.
+Kész.
+A kidtimerhez beállított felhasználók:
+Nincs beállított felhasználó.
+Felhasználónév:
+Valóban megváltoztassam a korlátozásokat? (y/n):
+A felhasználó nem létezik. Hozza létre a felhasználót a useradd paranccsal!
+A felhasználó nincs beállítva.
+Hiba. Hiányzó csomag függőségek.
+Telepítse az alábbi paranccsal:
+Szintaxis: addtime <felhasználó> <perc|reset>
+Szintaxis: addreward <felhasználó> <perc|reset>
