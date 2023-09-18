@@ -214,7 +214,10 @@ set_restriction_status () {
 
 get_restriction_status () {
    local p_username="$1"
-   cat $(restriction_status_filename "$p_username")
+
+   local v_restriction_status_filename="$(restriction_status_filename $p_username)"
+   [ -e "$v_restriction_status_filename" ] &&	\
+      cat "$v_restriction_status_filename"
 }
 
 set_time_data () {
@@ -420,7 +423,7 @@ reset_ttl () {
 is_user_locked () {
 	local p_username="$1"
 
-	[ $(get_restriction_status "$p_username") == "restricted" ]
+	[ "$(get_restriction_status $p_username)" == "restricted" ]
 }
 
 
