@@ -1,3 +1,15 @@
+Kidtimer now controls only running the blacklisted executables (instead of
+controlling the login session). The blacklisted executables are listed in
+
+   $dbdir/executables.blacklist (/var/local/kidtimer/executables.blacklist).
+
+Only one exact real full path is required (no symbolic links) per line. See the
+provided sample file for blacklisting Firefox.
+
+ATTENTION: Since no user login control will occur after upgrading to this
+version of kidtimer, please make sure that the kids users are unlocked
+(passwd -u <username>) so they can log in.
+
 Now the DB files are moved to /var/local/kidtimer and are directly editable. This directory can also be mounted from a fileserver for shared use.
 
 ### NOTE from the original author:
@@ -47,7 +59,7 @@ Allow your kid specific hours of the day to access the computer, both weekday an
 
 Set maximum amount of time, both weekday and weekend.
 
-Keeps track of reward balance that is persistent across days. 
+Keeps track of reward balance that is persistent across days.
 
 Time control can be temporarily suspended/resumed within the day.
 
