@@ -319,6 +319,7 @@ is_logged_in () {
 	local p_username="$1"
 #	loginctl --property=State show-user "$p_username" 2>/dev/null |
 #		grep -v "^State=closing$" >/dev/null
+	[ -e "$blacklisted_executables_file" ] &&
 	ps -U "$p_username" -o pid --no-headers |
 		xargs -i realpath -q /proc/{}/exe |
 		grep -F -f "$blacklisted_executables_file" > /dev/null
@@ -553,7 +554,9 @@ K=$1
 /bin/rm -f /tmp/killall.bash.$K
 echo "#!/bin/bash" > /tmp/killall.bash.$K
 echo "cat \"$blacklisted_executables_file\" |" >> /tmp/killall.bash.$K
-echo "   xargs -d \"\n\" /usr/bin/killall -KILL -u $K" >> /tmp/killall.bash.$K
+echo "   xargs \\" >> /tmp/killall.bash.$K
+echo "      -d \"\n\" /usr/bin/killall -KILL -u $K \\" >> /tmp/killall.bash.$K
+echo "      2>/dev/null" >> /tmp/killall.bash.$K
 echo "/bin/rm -rf /tmp/kidtimer.shutdown.$K" >> /tmp/killall.bash.$K
 echo "/bin/rm -f /tmp/killall.bash.$K" >> /tmp/killall.bash.$K
 echo "/bin/bash /tmp/killall.bash.$K" | setup_job 6
