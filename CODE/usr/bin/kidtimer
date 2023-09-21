@@ -336,7 +336,7 @@ set_exec_perms () {
    else p_command="$p_command -x user:$p_username";
    fi
    while read -r executable; do
-      $p_command "$executable"
+      [ -e "$executable" ] && $p_command "$executable"
    done < "$blacklisted_executables_file"
 }
 
