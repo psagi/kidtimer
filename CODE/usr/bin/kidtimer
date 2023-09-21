@@ -371,9 +371,7 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
 		set_ttl "$I" "$C"
 		# check time
 		if [ $C -le "$v_low_ttl_threshold" ]; then
-        	        if [ ! -e /tmp/kidtimer.shutdown.$I ]; then
-			   set_user_lock "$I" 0
-        	        fi
+		   set_user_lock "$I" 0
         	fi
         else
                 go_clean_jobs $I
@@ -430,8 +428,6 @@ is_user_locked () {
 set_user_lock () {
 	local p_username="$1" p_is_2B_locked="$2"
 #echo "set_user_lock($p_username, $p_is_2B_locked)" >&2
-	is_user_locked "$p_username"
-	if [ "$?" != "$p_is_2B_locked" ]; then
 		if [ "$p_is_2B_locked" == 0 ]; then
 			revoke_exec_perms "$p_username"
 	                (				\
@@ -443,7 +439,6 @@ set_user_lock () {
 		  clean_up_logout_sequence "$p_username"
 		  set_restriction_status "$p_username" "unrestricted"
 		fi
-	fi
 }
 
 
@@ -496,9 +491,18 @@ if [ -s $configdir/kid.list ]; then
 fi
 }
 
+is_logout_in_progress () {
+   local p_user="$1"
+
+   [ -e "/tmp/kidtimer.shutdown.$p_user" ]
+}
+
 
 go_logout () {
 K=$1
+
+if is_logout_in_progress "$K"; then return; fi
+
 go_send $K 5
 go_send $K 4
 go_send $K 3
