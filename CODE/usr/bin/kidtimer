@@ -554,9 +554,11 @@ K=$1
 /bin/rm -f /tmp/killall.bash.$K
 echo "#!/bin/bash" > /tmp/killall.bash.$K
 echo "cat \"$blacklisted_executables_file\" |" >> /tmp/killall.bash.$K
-echo "   xargs \\" >> /tmp/killall.bash.$K
-echo "      -d \"\n\" /usr/bin/killall -KILL -u $K \\" >> /tmp/killall.bash.$K
-echo "      2>/dev/null" >> /tmp/killall.bash.$K
+echo "   while read v_executable; do" >> /tmp/killall.bash.$K
+echo "      [ -e \"\$v_executable\" ] &&	\\" >> /tmp/killall.bash.$K
+echo "         /usr/bin/killall		\\" >> /tmp/killall.bash.$K
+echo "            -q -KILL -u $K \"\$v_executable\"" >> /tmp/killall.bash.$K
+echo "   done" >> /tmp/killall.bash.$K
 echo "/bin/rm -rf /tmp/kidtimer.shutdown.$K" >> /tmp/killall.bash.$K
 echo "/bin/rm -f /tmp/killall.bash.$K" >> /tmp/killall.bash.$K
 echo "/bin/bash /tmp/killall.bash.$K" | setup_job 6
