@@ -1,3 +1,9 @@
+kidtimer (2.18-1) UNRELEASED; urgency=low
+
+  * FIX: removed unnecessary dependency on systemd
+
+ -- Peter Sági <psagi@freemail.hu>  Mon, 11 Sep 2023 20:57:21 +0200
+
 kidtimer (2.17-1) UNRELEASED; urgency=low
 
   * Track and control usage of blacklisted executables instead of the login session.
