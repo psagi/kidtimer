@@ -1,0 +1,19 @@
+#!/bin/bash
+
+basedir="/usr/share/kidtimer"
+#basedir="../kidtimer.git/CODE/usr/share/kidtimer"
+. "$basedir/common.sh"
+blacklisted_hostnames_file="$configdir/hosts.blacklist"
+
+p_hostname="$1"
+
+echo "kidtimer_is_host_allowed: checking $p_hostname" >&2
+
+if [ ! -r "$blacklisted_hostnames_file" ]; then exit 0; fi
+
+while read hostname_pattern; do
+   if [[ "$p_hostname" == $hostname_pattern ]] && kidtimer getstatus; then
+      exit 1;
+   fi
+done < "$blacklisted_hostnames_file";
+exit 0;

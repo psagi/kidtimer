@@ -1,6 +1,7 @@
 kidtimer (2.18-1) UNRELEASED; urgency=low
 
   * FIX: removed unnecessary dependency on systemd
+  * Host filtering feature with libnss-hostfilter
 
  -- Peter Sági <psagi@freemail.hu>  Mon, 11 Sep 2023 20:57:21 +0200
 

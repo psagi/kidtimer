@@ -5,10 +5,9 @@
 #variables
 #LANG="en_US.UTF-8" #unremark to change preferred language.
 basedir="/usr/share/kidtimer"
-dbdir="/var/local/kidtimer"
+. "$basedir/common.sh"
 scheduledir="$dbdir/schedule"
 timedir="$dbdir/time"
-configdir="$dbdir"
 blacklisted_executables_file="$configdir/executables.blacklist"
 Cdate=`/bin/date +%Y-%m-%d`
 TUI=0
@@ -262,7 +261,7 @@ min () {
 
 
 apply_penalty_if () {
-	local p_username="$1" p_ttl="$2"
+	local p_username="$1" p_ttl=$(("$2"))
 
 	local v_min_ttl_2_keep=10 v_reward v_penalty_2_apply
 	if [ "$p_ttl" -gt "$v_min_ttl_2_keep" ]; then
@@ -284,7 +283,7 @@ apply_penalty_if () {
 
 
 apply_reward_if () {
-	local p_username="$1" p_ttl="$2" p_low_ttl_threshold="$3"
+	local p_username="$1" p_ttl=$(("$2")) p_low_ttl_threshold="$3"
 
 	local v_reward_2_apply=0 v_reward
 	if [ "$p_ttl" -le "$p_low_ttl_threshold" ]; then
@@ -371,7 +370,7 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
 		C=$(apply_reward_if "$I" "$C" "$v_low_ttl_threshold")
 		set_ttl "$I" "$C"
 		# check time
-		if [ $C -le "$v_low_ttl_threshold" ]; then
+		if [ $(($C)) -le "$v_low_ttl_threshold" ]; then
 		   set_user_lock "$I" 0
         	fi
         else
@@ -483,8 +482,8 @@ if [ -s $configdir/kid.list ]; then
 		! is_released "$I" && ( 			\
 			[ $(get_schedule "$I") == "n" ] ||	\
 			(					\
-				[ $(get_ttl "$I") -le 0 ] &&	\
-				[ $(get_reward "$I") -le 0 ]	\
+				[ $(($(get_ttl "$I"))) -le 0 ] &&	\
+				[ $(($(get_reward "$I"))) -le 0 ]	\
 			)					\
 		)
 		set_user_lock "$I" "$?"
