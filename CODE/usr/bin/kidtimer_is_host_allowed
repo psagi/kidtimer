@@ -5,15 +5,29 @@ basedir="/usr/share/kidtimer"
 . "$basedir/common.sh"
 blacklisted_hostnames_file="$configdir/hosts.blacklist"
 
+log_and_exit () {
+   local p_hostname="$1" p_exit_status=$(("$2"))
+
+   logger	\
+      -p user.info -t "$0"		\
+      "$( [ $p_exit_status -eq 0 ] && echo "A" || echo "D" ) $p_hostname"
+   exit $p_exit_status
+}
+
+
+### MAIN ###
+
 p_hostname="$1"
 
-echo "kidtimer_is_host_allowed: checking $p_hostname" >&2
+#echo "kidtimer_is_host_allowed: checking $p_hostname" >&2
 
-if [ ! -r "$blacklisted_hostnames_file" ]; then exit 0; fi
+if [ ! -r "$blacklisted_hostnames_file" ]; then
+   log_and_exit "$p_hostname" 0
+fi
 
 while read hostname_pattern; do
    if [[ "$p_hostname" == $hostname_pattern ]] && kidtimer getstatus; then
-      exit 1;
+      log_and_exit "$p_hostname" 1
    fi
 done < "$blacklisted_hostnames_file";
-exit 0;
+log_and_exit "$p_hostname" 0;
