@@ -10,7 +10,7 @@ log_and_exit () {
 
    logger	\
       -p user.info -t "$0"		\
-      "$( [ $p_exit_status -eq 0 ] && echo "A" || echo "D" ) $p_hostname"
+      "$( [ $p_exit_status -eq 0 ] && echo "A" || echo "D" ) $p_hostname $USER"
    exit $p_exit_status
 }
 
