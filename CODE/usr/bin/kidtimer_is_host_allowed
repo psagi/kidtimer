@@ -21,13 +21,16 @@ p_hostname="$1"
 
 #echo "kidtimer_is_host_allowed: checking $p_hostname" >&2
 
-if [ ! -r "$blacklisted_hostnames_file" ]; then
-   log_and_exit "$p_hostname" 0
+if [ ! -r "$blacklisted_hostnames_file" ] || ! is_user_set_up "$USER"; then
+   exit 0
 fi
 
 while read hostname_pattern; do
-   if [[ "$p_hostname" == $hostname_pattern ]] && kidtimer getstatus; then
-      log_and_exit "$p_hostname" 1
+   if [[ "$p_hostname" == $hostname_pattern ]]; then
+      if kidtimer getstatus; then
+	 log_and_exit "$p_hostname" 1
+      fi
+      set_visiting_blacklisted_site_flag "$USER"
    fi
 done < "$blacklisted_hostnames_file";
 log_and_exit "$p_hostname" 0;

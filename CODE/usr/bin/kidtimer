@@ -70,13 +70,8 @@ echo
 has_ttl_been_touched_in_the_last_minute () {
 	local p_username="$1"
 
-	[ -e $(ttl_filename "$p_username") ] &&				\
-		[							\
-			$((						\
-				$(date +%s) -				\
-				$(stat -c "%Y" $(ttl_filename "$p_username") ) \
-			)) -lt 50					\
-		]
+	has_file_been_touched_in_the_last_n_seconds	\
+	 "$(ttl_filename "$p_username")" 50
 }
 
 
@@ -202,7 +197,7 @@ unlock_db () {
 
 restriction_status_filename () {
    local p_username="$1"
-   echo "$dbdir.local/$p_username.status"
+   echo "$dbdir_local/$p_username.status"
 }
 
 set_restriction_status () {
@@ -314,14 +309,20 @@ is_released () {
 	)
 }
 
-is_logged_in () {
+is_running_blacklisted_process() {
 	local p_username="$1"
-#	loginctl --property=State show-user "$p_username" 2>/dev/null |
-#		grep -v "^State=closing$" >/dev/null
+
 	[ -e "$blacklisted_executables_file" ] &&
 	ps -U "$p_username" -o pid --no-headers |
 		xargs -i realpath -q /proc/{}/exe |
 		grep -F -f "$blacklisted_executables_file" > /dev/null
+}
+
+is_logged_in () {
+	local p_username="$1"
+
+	is_running_blacklisted_process "$p_username" ||
+	 is_visiting_blacklisted_site "$p_username"
 }
 
 set_exec_perms () {
@@ -376,6 +377,7 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
         else
                 go_clean_jobs $I
         fi
+	reset_visiting_blacklisted_site_flag "$I"
 done
 }
 
@@ -470,6 +472,7 @@ for I in `/bin/cat $configdir/kid.list | sort -u`; do
 		reset_ttl "$I"
 		clear_released "$I"
         fi
+	reset_visiting_blacklisted_site_flag "$I"
 done
 go_hourly
 }
@@ -598,8 +601,7 @@ addreward () {
 
 increase_time_field () {
 local U="$1" A="$2" p_field="$3"
-grep -q $U $configdir/kid.list
-if [ $? -eq 0 ]; then 
+if is_user_set_up "$U"; then 
 	if [ "$A" == "reset" ]; then
 		reset_time_data "$U" "$p_field"
 	elif [ "$A" == "" ]; then
@@ -741,8 +743,7 @@ go_modify_user () {
 echo
 #english: Username:
 echo -n "`/bin/sed -n '16p' $basedir/locale/$LANG` "; read U
-grep -q ^$U $configdir/kid.list
-if [ $? -eq 0 ]; then
+if is_user_set_up "$U"; then
         if [ -e /usr/bin/nano ]; then
                 /usr/bin/nano $scheduledir/$U
                 go_echo_done
@@ -763,8 +764,7 @@ go_remove_user () {
 echo
 #english: Username:
 echo -n "`/bin/sed -n '16p' $basedir/locale/$LANG` "; read U
-grep -q ^$U $configdir/kid.list
-if [ $? -eq 0 ]; then
+if is_user_set_up "$U"; then
         /bin/grep -v ^$U $configdir/kid.list > /tmp/kidtimer.tmp
         /bin/cat /tmp/kidtimer.tmp > $configdir/kid.list
         go_echo_done
