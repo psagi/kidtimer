@@ -1,1 +1,116 @@
-../../README.md
+Kidtimer now controls only running the blacklisted executables (instead of
+controlling the login session). The blacklisted executables are listed in
+
+   $dbdir/executables.blacklist (/var/local/kidtimer/executables.blacklist).
+
+Only one exact real full path is required (no symbolic links) per line. See the
+provided sample file for blacklisting Firefox.
+
+ATTENTION: Since no user login control will occur after upgrading to this
+version of kidtimer, please make sure that the kids users are unlocked
+(passwd -u <username>) so they can log in.
+
+Now the DB files are moved to /var/local/kidtimer and are directly editable.
+This directory can also be mounted from a fileserver for shared use.
+
+Internet site visits can also be restricted with the help of libnss-hostfilter.
+This mechanism filters host name resolution (DNS) queries and when time is up
+for a user, blacklisted hosts are prevented from being resolved for him/her. The
+blacklisted hosts are listed in
+
+   $dbdir/hosts.blacklist (/var/local/kidtimer/hosts.blacklist).
+
+One hostname pattern is allowed per line. Pattern mathing is done as of the Bash
+manual (with extglob option enabled). See the provided sample file for
+blacklisting Youtube and Facebook. Host name resolution attempts of kidtimer
+users are logged to syslog, so the blacklist can be adjusted by analyzing user
+behaviour.
+Setting up blacklisted host handling requires a bit of preparation, so please
+look into the installation instructions below.
+The steps #2, #3, #5 and adjusting the hosts blacklist is also necessary when
+upgrading to kidtimer v2.18.
+
+### NOTE from the original author:
+I have been looking for a solution to this for a long time. I have two kids and wish to restrict their time on the computers. Since nothing else seems to work out there, I decided to write my own. I call it kidtimer. Very original, I know. :)
+
+Kidtimer should work on any recent version of Ubuntu, both 32 & 64 bit. Should also work on Debian too. It uses standard Linux utilities and notify-send (for user notification).
+
+This is how to install it and use it;
+
+1. Download the latest kidtimer deb file;
+https://github.com/psagi/kidtimer/raw/master/DEBS/kidtimer_latest.deb
+
+2. If you would like to use the Internet site blacklisting feature, download
+libnss-hostfilter for your architecture, too.
+https://github.com/psagi/libnss-hostfilter/raw/master/release/
+(For architectures there is no debian package built, you can always build it
+from source.) 
+
+3. Install libnss-hostfilter (if Internet host blacklisting is required):
+<pre>
+sudo dpkg -i libnss_hostfilter*.deb
+sudo apt-get -f install
+</pre>
+Configure it according to its documentation.
+
+4. Install it using Software Center or use the following lines;
+<pre>
+sudo dpkg -i kidtimer*.deb
+sudo apt-get -f install
+</pre>
+
+5. If Internet host blacklisting is reguired, configure the hostfilter helper command of libnss-hostfilter according to its documentation to be the one provided by kidtimer. See the example configuration file
+
+/usr/share/kidtimer/doc/examples/hostfilter.conf.
+
+6. Run kidtimer:
+<pre>
+sudo kidtimer
+</pre>
+
+7. Setup a existing user account.
+
+8. Done.
+
+For help:
+<pre>
+sudo kidtimer help
+</pre>
+
+Add time to a user's account (for that day only):
+<pre>
+sudo kidtimer addtime user minutes
+</pre>
+
+To check user's time:
+<pre>
+sudo kidtimer gettime user
+</pre>
+
+
+Features:
+
+Allow your kid specific hours of the day to run blacklisted executables and
+access blacklisted Internet sites, both weekday and weekend.
+
+Set maximum amount of time, both weekday and weekend.
+
+Keeps track of reward balance that is persistent across days.
+
+Time control can be temporarily suspended/resumed within the day.
+
+
+Cronjobs:
+
+Check every minute to see if user is logged in. If so, increment total time. If
+hit max time, revoke exec permission from blacklisted executables and prevent
+accessing blacklisted Internet sites and start logoff sequence (5 mins total)
+that will result in killing those.
+
+Check hourly to see if user is allowed to use the blacklisted programs, sites.
+
+At midnight, reset time.
+
+The application uses notify-send to alert user time is running out. When time runs out, blacklisted user processes are terminated, so please prepare user.
+
+Enjoy!

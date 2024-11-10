@@ -7,5 +7,6 @@ Section: utils
 Priority: optional
 Architecture: all
 Depends: at, libnotify-bin, bash, coreutils, grep, sed, passwd, hostname, findutils, acl, psmisc, bsdutils
+Suggests: libnss-hostfilter
 Homepage: http://github.com/psagi/kidtimer
 Description: Set daily limits on computer time.
